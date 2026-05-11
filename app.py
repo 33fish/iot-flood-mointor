@@ -18,7 +18,7 @@ import os
 import time
 from datetime import datetime, timezone
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder=".", static_url_path="")
 CORS(app)  # Allow dashboard (different port) to call API
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "flood_sentinel.db")
@@ -85,6 +85,9 @@ def classify_state(leak_detected: bool, water_level_cm: float) -> tuple[str, str
         return "WARNING", "ultrasonic"
     return "SAFE", "none"
 
+@app.route("/", methods=["GET"])
+def index():
+    return app.send_static_file("dashboard.html")
 # ── POST /api/telemetry ───────────────────────────────────────────────────────
 @app.route("/api/telemetry", methods=["POST"])
 def receive_telemetry():
