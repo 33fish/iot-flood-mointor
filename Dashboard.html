@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Flood Sentinel – Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root {
+    --bg: #f5f6f8;
+    --surface: #ffffff;
+    --border: rgba(0,0,0,0.08);
+    --text: #1a1a1a;
+    --text-muted: #666;
+    --safe: #2d9e6b;
+    --safe-bg: #e8f7f1;
+    --warn: #b87c0e;
+    --warn-bg: #fef6e4;
+    --crit: #c0392b;
+    --crit-bg: #fdecea;
+    --accent: #1a6cbf;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1117;
+      --surface: #1c1f2a;
+      --border: rgba(255,255,255,0.08);
+      --text: #e8eaf0;
+      --text-muted: #8a8d9a;
+      --safe-bg: #0d2e1f;
+      --warn-bg: #2a1f07;
+      --crit-bg: #2a0f0f;
+      --accent: #4a9eff;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+         background: var(--bg); color: var(--text); font-size: 14px; }
+
+  header { background: var(--surface); border-bottom: 1px solid var(--border);
+           padding: 0 24px; display: flex; align-items: center;
+           justify-content: space-between; height: 56px; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 16px; }
+  .logo-dot { width: 10px; height: 10px; border-radius: 50%;
+              background: var(--safe); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .header-right { display: flex; align-items: center; gap: 16px; }
+  .conn-badge { font-size: 12px; color: var(--text-muted); display: flex;
+                align-items: center; gap: 5px; }
+  .conn-dot { width: 6px; height: 6px; border-radius: 50%; background: #ccc; }
+  .conn-dot.ok { background: var(--safe); }
+  #last-updated { font-size: 12px; color: var(--text-muted); }
+
+  main { max-width: 1100px; margin: 0 auto; padding: 20px 24px; }
+
+  /* State Banner */
+  #state-banner { border-radius: 12px; padding: 20px 24px;
+                  margin-bottom: 20px; display: flex;
+                  align-items: center; justify-content: space-between;
+                  background: var(--safe-bg); border: 1px solid rgba(45,158,107,0.2);
+                  transition: background 0.4s, border-color 0.4s; }
+  #state-banner.SAFE    { background: var(--safe-bg); border-color: rgba(45,158,107,0.2); }
+  #state-banner.WARNING { background: var(--warn-bg); border-color: rgba(184,124,14,0.3); }
+  #state-banner.CRITICAL{ background: var(--crit-bg); border-color: rgba(192,57,43,0.35); animation: crit-flash 0.8s infinite alternate; }
+  @keyframes crit-flash { from{opacity:1} to{opacity:0.85} }
+  .state-left { display: flex; align-items: center; gap: 14px; }
+  .state-icon { font-size: 28px; line-height: 1; }
+  .state-label { font-size: 22px; font-weight: 700; letter-spacing: -0.3px; }
+  .SAFE .state-label    { color: var(--safe); }
+  .WARNING .state-label { color: var(--warn); }
+  .CRITICAL .state-label{ color: var(--crit); }
+  .state-sub { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+  .indicator-row { display: flex; gap: 16px; }
+  .indicator { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-muted); }
+  .ind-dot { width: 8px; height: 8px; border-radius: 50%; background: #ccc; }
+  .ind-dot.on { background: var(--crit); }
+
+  /* Metric cards */
+  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+  .metric { background: var(--surface); border: 1px solid var(--border);
+            border-radius: 10px; padding: 16px 18px; }
+  .metric-label { font-size: 12px; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .metric-value { font-size: 26px; font-weight: 600; line-height: 1; }
+  .metric-sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+  .v-safe { color: var(--safe); }
+  .v-warn { color: var(--warn); }
+  .v-crit { color: var(--crit); }
+
+  /* Two column layout */
+  .cols { display: grid; grid-template-columns: 1fr 380px; gap: 16px; margin-bottom: 16px; }
+  @media (max-width: 800px) { .cols { grid-template-columns: 1fr; } .metrics { grid-template-columns: repeat(2,1fr); } }
+
+  .card { background: var(--surface); border: 1px solid var(--border);
+          border-radius: 10px; padding: 18px 20px; }
+  .card-title { font-size: 13px; font-weight: 600; color: var(--text-muted);
+                text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 14px; }
+
+  /* Chart */
+  .chart-wrap { position: relative; height: 200px; }
+
+  /* Alert list */
+  #alert-list { list-style: none; max-height: 260px; overflow-y: auto; }
+  #alert-list li { display: flex; align-items: flex-start; gap: 10px;
+                   padding: 10px 0; border-bottom: 1px solid var(--border); }
+  #alert-list li:last-child { border-bottom: none; }
+  .al-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
+  .al-WARNING  .al-dot { background: var(--warn); }
+  .al-CRITICAL .al-dot { background: var(--crit); }
+  .al-text { font-size: 13px; }
+  .al-time { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .badge { display: inline-block; font-size: 10px; font-weight: 600;
+           padding: 2px 6px; border-radius: 4px; text-transform: uppercase; }
+  .badge-resolved { background: var(--safe-bg); color: var(--safe); }
+  .badge-open     { background: var(--crit-bg); color: var(--crit); }
+
+  /* Live readings */
+  .readings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .reading-box { border: 1px solid var(--border); border-radius: 8px; padding: 14px; text-align: center; }
+  .reading-val { font-size: 28px; font-weight: 600; line-height: 1; margin-bottom: 4px; }
+  .reading-label { font-size: 12px; color: var(--text-muted); }
+  .leak-yes { color: var(--crit); }
+  .leak-no  { color: var(--safe); }
+
+  /* Controls */
+  .controls { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
+  button { padding: 7px 14px; border-radius: 7px; border: 1px solid var(--border);
+           background: var(--surface); color: var(--text); cursor: pointer; font-size: 13px; }
+  button:hover { background: var(--bg); }
+  button.danger { border-color: rgba(192,57,43,0.4); color: var(--crit); }
+
+  /* Connection overlay */
+  #no-data { text-align: center; padding: 40px; color: var(--text-muted); }
+  #no-data p { font-size: 20px; margin-bottom: 8px; }
+  #no-data small { font-size: 13px; }
+
+  .empty { color: var(--text-muted); font-size: 13px; padding: 16px 0; text-align: center; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-dot" id="logo-dot"></div>
+    Smart Flood Sentinel
+  </div>
+  <div class="header-right">
+    <div class="conn-badge">
+      <div class="conn-dot" id="conn-dot"></div>
+      <span id="conn-status">Connecting…</span>
+    </div>
+    <span id="last-updated">–</span>
+  </div>
+</header>
+
+<main>
+  <!-- State Banner -->
+  <div id="state-banner" class="SAFE">
+    <div class="state-left">
+      <div class="state-icon" id="state-icon">💧</div>
+      <div>
+        <div class="state-label" id="state-label">Waiting for data</div>
+        <div class="state-sub" id="state-sub">No readings received yet</div>
+      </div>
+    </div>
+    <div class="indicator-row">
+      <div class="indicator">
+        <div class="ind-dot" id="led-dot"></div>
+        LED
+      </div>
+      <div class="indicator">
+        <div class="ind-dot" id="buzzer-dot"></div>
+        Buzzer
+      </div>
+    </div>
+  </div>
+
+  <!-- Metric Cards -->
+  <div class="metrics">
+    <div class="metric">
+      <div class="metric-label">Total readings</div>
+      <div class="metric-value" id="m-total">–</div>
+      <div class="metric-sub">since session start</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Alerts fired</div>
+      <div class="metric-value v-crit" id="m-alerts">–</div>
+      <div class="metric-sub" id="m-open">– open</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Avg water level</div>
+      <div class="metric-value v-safe" id="m-level">–</div>
+      <div class="metric-sub">cm, all readings</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Node</div>
+      <div class="metric-value" style="font-size:16px; margin-top:4px;" id="m-node">–</div>
+      <div class="metric-sub">Wi-Fi / HTTP</div>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <button onclick="refresh()">⟳ Refresh now</button>
+    <button onclick="toggleAuto()" id="auto-btn">⏸ Pause auto-refresh</button>
+    <button class="danger" onclick="resetData()">✕ Clear all data</button>
+  </div>
+
+  <div class="cols">
+    <!-- Water Level Chart -->
+    <div class="card">
+      <div class="card-title">Water level over time (cm)</div>
+      <div class="chart-wrap">
+        <canvas id="levelChart" role="img" aria-label="Line chart of water level readings over time">Water level trend</canvas>
+      </div>
+    </div>
+
+    <!-- Live Readings -->
+    <div class="card">
+      <div class="card-title">Live sensor readings</div>
+      <div class="readings-grid">
+        <div class="reading-box">
+          <div class="reading-val leak-no" id="r-leak">–</div>
+          <div class="reading-label">Leak sensor</div>
+        </div>
+        <div class="reading-box">
+          <div class="reading-val" id="r-level">–</div>
+          <div class="reading-label">Water level (cm)</div>
+        </div>
+      </div>
+      <div style="margin-top: 14px;">
+        <div class="card-title" style="margin-bottom: 10px;">State history (last 10)</div>
+        <canvas id="stateChart" height="80" role="img" aria-label="Bar chart of recent state history">Recent state history</canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Alert Log -->
+  <div class="card">
+    <div class="card-title">Alert log</div>
+    <ul id="alert-list">
+      <li><div class="empty">No alerts yet.</div></li>
+    </ul>
+  </div>
+</main>
+
+<script>
+const API = 'http://localhost:5000';
+let levelChart, stateChart;
+let autoRefresh = true;
+let refreshTimer;
+const REFRESH_MS = 3000;
+
+const TRIGGER_LABELS = {
+  leak_sensor: 'Leak sensor triggered',
+  ultrasonic:  'Rising water level',
+  both:        'Leak + high water level',
+  none:        'Normal'
+};
+
+const STATE_META = {
+  SAFE:     { icon: '✅', label: 'SAFE',     sub: 'All sensors normal – no water detected' },
+  WARNING:  { icon: '⚠️',  label: 'WARNING',  sub: 'Abnormal condition detected – check area' },
+  CRITICAL: { icon: '🚨', label: 'CRITICAL', sub: 'Critical water event – immediate action required' },
+  NO_DATA:  { icon: '💧', label: 'Waiting for data', sub: 'No readings received yet' },
+};
+
+function formatTs(ts) {
+  const d = new Date(ts);
+  return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+}
+
+function formatAgo(ts) {
+  const secs = Math.round((Date.now() - new Date(ts).getTime()) / 1000);
+  if (secs < 60)  return `${secs}s ago`;
+  if (secs < 3600) return `${Math.floor(secs/60)}m ago`;
+  return `${Math.floor(secs/3600)}h ago`;
+}
+
+// ── UI updaters ───────────────────────────────────────────────────────────────
+
+function updateBanner(state, latest) {
+  const banner = document.getElementById('state-banner');
+  const meta   = STATE_META[state] || STATE_META.NO_DATA;
+  banner.className = state;
+  document.getElementById('state-icon').textContent  = meta.icon;
+  document.getElementById('state-label').textContent = meta.label;
+  document.getElementById('state-sub').textContent   =
+    latest ? `Node: ${latest.node_id}  ·  Last seen: ${formatTs(latest.ts)}` : meta.sub;
+
+  const ledDot    = document.getElementById('led-dot');
+  const buzzerDot = document.getElementById('buzzer-dot');
+  ledDot.className    = 'ind-dot' + (latest?.led_on    ? ' on' : '');
+  buzzerDot.className = 'ind-dot' + (latest?.buzzer_on ? ' on' : '');
+
+  // Pulse logo dot color
+  const dot = document.getElementById('logo-dot');
+  dot.style.background = state === 'SAFE' ? 'var(--safe)'
+                       : state === 'WARNING' ? 'var(--warn)'
+                       : 'var(--crit)';
+}
+
+function updateLiveReadings(latest) {
+  if (!latest) return;
+  const leakEl  = document.getElementById('r-leak');
+  const levelEl = document.getElementById('r-level');
+  leakEl.textContent = latest.leak_detected ? 'DETECTED' : 'CLEAR';
+  leakEl.className   = 'reading-val ' + (latest.leak_detected ? 'leak-yes' : 'leak-no');
+  levelEl.textContent = latest.water_level_cm >= 0
+    ? latest.water_level_cm.toFixed(1) : '–';
+}
+
+function updateMetrics(stats) {
+  document.getElementById('m-total').textContent  = stats.total_readings;
+  document.getElementById('m-alerts').textContent = stats.total_alerts;
+  document.getElementById('m-open').textContent   = `${stats.open_alerts} open`;
+  document.getElementById('m-level').textContent  =
+    stats.avg_water_level_cm ? stats.avg_water_level_cm.toFixed(1) : '–';
+}
+
+function updateAlertList(alerts) {
+  const ul = document.getElementById('alert-list');
+  if (!alerts.length) {
+    ul.innerHTML = '<li><div class="empty">No alerts yet.</div></li>';
+    return;
+  }
+  ul.innerHTML = alerts.map(a => `
+    <li class="al-${a.state}">
+      <div class="al-dot"></div>
+      <div>
+        <div class="al-text">
+          <strong>${a.state}</strong> – ${TRIGGER_LABELS[a.trigger] || a.trigger}
+          <span class="badge ${a.resolved ? 'badge-resolved' : 'badge-open'}">
+            ${a.resolved ? 'resolved' : 'open'}
+          </span>
+        </div>
+        <div class="al-time">${formatTs(a.ts)} · ${formatAgo(a.ts)} · Node: ${a.node_id}</div>
+      </div>
+    </li>
+  `).join('');
+}
+
+// ── Charts ────────────────────────────────────────────────────────────────────
+
+function initCharts() {
+  const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const gridColor  = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+  const textColor  = isDark ? '#8a8d9a' : '#999';
+
+  // Water level line chart
+  const ctx1 = document.getElementById('levelChart').getContext('2d');
+  levelChart = new Chart(ctx1, {
+    type: 'line',
+    data: { labels: [], datasets: [
+      {
+        label: 'Water level (cm)',
+        data: [],
+        borderColor: '#1a6cbf',
+        backgroundColor: 'rgba(26,108,191,0.08)',
+        borderWidth: 2,
+        pointRadius: 3,
+        tension: 0.3,
+        fill: true
+      },
+      {
+        label: 'Warning threshold',
+        data: [],
+        borderColor: '#e0a020',
+        borderDash: [5, 4],
+        borderWidth: 1.5,
+        pointRadius: 0,
+        fill: false
+      },
+      {
+        label: 'Critical threshold',
+        data: [],
+        borderColor: '#c0392b',
+        borderDash: [5, 4],
+        borderWidth: 1.5,
+        pointRadius: 0,
+        fill: false
+      }
+    ]},
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: textColor, maxTicksLimit: 8, font: {size:11} },
+             grid:  { color: gridColor } },
+        y: { ticks: { color: textColor, font: {size:11}, callback: v => v.toFixed(1) },
+             grid:  { color: gridColor }, min: 0 }
+      }
+    }
+  });
+
+  // State bar chart (mini)
+  const ctx2 = document.getElementById('stateChart').getContext('2d');
+  stateChart = new Chart(ctx2, {
+    type: 'bar',
+    data: { labels: [], datasets: [{
+      data: [],
+      backgroundColor: [],
+      borderRadius: 3
+    }]},
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: {
+        callbacks: { label: ctx => ctx.dataset.backgroundColor[ctx.dataIndex] === '#2d9e6b' ? 'SAFE' :
+                                   ctx.dataset.backgroundColor[ctx.dataIndex] === '#b87c0e' ? 'WARNING' : 'CRITICAL' }
+      }},
+      scales: {
+        x: { ticks: { color: textColor, font:{size:10} }, grid:{ display:false } },
+        y: { display: false, min:0, max:1 }
+      }
+    }
+  });
+}
+
+function updateCharts(history) {
+  if (!history.length) return;
+
+  const recent = [...history].reverse().slice(-30);
+
+  levelChart.data.labels   = recent.map(r => formatTs(r.ts));
+  levelChart.data.datasets[0].data = recent.map(r => r.water_level >= 0 ? r.water_level : null);
+  levelChart.data.datasets[1].data = recent.map(() => 5);   // warning threshold
+  levelChart.data.datasets[2].data = recent.map(() => 10);  // critical threshold
+  levelChart.update('none');
+
+  const last10 = recent.slice(-10);
+  const stateColors = { SAFE: '#2d9e6b', WARNING: '#b87c0e', CRITICAL: '#c0392b' };
+  stateChart.data.labels = last10.map(r => formatTs(r.ts).slice(-8));
+  stateChart.data.datasets[0].data = last10.map(() => 1);
+  stateChart.data.datasets[0].backgroundColor = last10.map(r => stateColors[r.state] || '#ccc');
+  stateChart.update('none');
+}
+
+// ── Data fetching ─────────────────────────────────────────────────────────────
+
+async function refresh() {
+  try {
+    const [statusRes, histRes, alertRes, statsRes] = await Promise.all([
+      fetch(`${API}/api/status`),
+      fetch(`${API}/api/history?n=30`),
+      fetch(`${API}/api/alerts`),
+      fetch(`${API}/api/stats`)
+    ]);
+
+    if (!statusRes.ok) throw new Error('Backend error');
+
+    const status  = await statusRes.json();
+    const history = await histRes.json();
+    const alerts  = await alertRes.json();
+    const stats   = await statsRes.json();
+
+    // Connection indicator
+    document.getElementById('conn-dot').className = 'conn-dot ok';
+    document.getElementById('conn-status').textContent = 'Connected';
+    document.getElementById('last-updated').textContent =
+      'Updated ' + new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+
+    if (status.latest) {
+      document.getElementById('m-node').textContent = status.latest.node_id;
+    }
+
+    updateBanner(status.state, status.latest);
+    updateLiveReadings(status.latest);
+    updateMetrics(stats);
+    updateAlertList(alerts);
+    updateCharts(history);
+
+  } catch (e) {
+    document.getElementById('conn-dot').className = 'conn-dot';
+    document.getElementById('conn-status').textContent = 'No connection';
+    console.warn('Fetch error:', e.message);
+  }
+}
+
+function toggleAuto() {
+  autoRefresh = !autoRefresh;
+  const btn = document.getElementById('auto-btn');
+  if (autoRefresh) {
+    btn.textContent = '⏸ Pause auto-refresh';
+    scheduleRefresh();
+  } else {
+    clearTimeout(refreshTimer);
+    btn.textContent = '▶ Resume auto-refresh';
+  }
+}
+
+function scheduleRefresh() {
+  clearTimeout(refreshTimer);
+  if (autoRefresh) {
+    refreshTimer = setTimeout(async () => { await refresh(); scheduleRefresh(); }, REFRESH_MS);
+  }
+}
+
+async function resetData() {
+  if (!confirm('Clear all sensor data and alerts? This cannot be undone.')) return;
+  await fetch(`${API}/api/reset`, { method: 'POST' });
+  await refresh();
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+initCharts();
+refresh().then(scheduleRefresh);
+</script>
+</body>
+</html>
