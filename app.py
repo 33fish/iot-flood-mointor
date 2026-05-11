@@ -87,7 +87,7 @@ def classify_state(leak_detected: bool, water_level_cm: float) -> tuple[str, str
 
 @app.route("/", methods=["GET"])
 def index():
-    return app.send_static_file("dashboard.html")
+    return app.send_static_file("Dashboard.html")
 # ── POST /api/telemetry ───────────────────────────────────────────────────────
 @app.route("/api/telemetry", methods=["POST"])
 def receive_telemetry():
