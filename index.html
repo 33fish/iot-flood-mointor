@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flood Monitor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  /* ── Config ── */
+  :root {
+    --bg:        #0a0c0f;
+    --bg2:       #111318;
+    --bg3:       #181c23;
+    --border:    rgba(255,255,255,0.07);
+    --border2:   rgba(255,255,255,0.12);
+    --text:      #e8eaf0;
+    --text2:     #7c8191;
+    --text3:     #4a4f5e;
+    --blue:      #3b82f6;
+    --blue-dim:  rgba(59,130,246,0.12);
+    --green:     #22c55e;
+    --green-dim: rgba(34,197,94,0.12);
+    --red:       #ef4444;
+    --red-dim:   rgba(239,68,68,0.12);
+    --amber:     #f59e0b;
+    --amber-dim: rgba(245,158,11,0.12);
+    --mono:      'DM Mono', monospace;
+    --sans:      'DM Sans', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  /* ── Layout ── */
+  .shell {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 24px 60px;
+  }
+
+  /* ── Nav ── */
+  nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 0;
+    border-bottom: 0.5px solid var(--border);
+    margin-bottom: 32px;
+  }
+
+  .nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--text);
+  }
+
+  .nav-brand .logo {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: var(--blue-dim);
+    border: 0.5px solid var(--blue);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .nav-brand .logo svg {
+    width: 14px;
+    height: 14px;
+    stroke: var(--blue);
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+  }
+
+  .nav-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 12px;
+    color: var(--text2);
+  }
+
+  .status-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 99px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    border: 0.5px solid;
+    transition: all 0.3s;
+  }
+
+  .status-pill.normal { background: var(--green-dim); border-color: var(--green); color: var(--green); }
+  .status-pill.alarm  { background: var(--red-dim);   border-color: var(--red);   color: var(--red); }
+  .status-pill.sleep  { background: var(--amber-dim); border-color: var(--amber); color: var(--amber); }
+
+  .status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* ── Metrics ── */
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  @media (max-width: 700px) {
+    .metrics { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  .metric {
+    background: var(--bg2);
+    border: 0.5px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 18px;
+    transition: border-color 0.3s;
+  }
+
+  .metric:hover { border-color: var(--border2); }
+
+  .metric-label {
+    font-size: 11px;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 8px;
+    font-family: var(--mono);
+  }
+
+  .metric-value {
+    font-family: var(--mono);
+    font-size: 28px;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1;
+  }
+
+  .metric-unit {
+    font-size: 13px;
+    color: var(--text2);
+    margin-left: 2px;
+  }
+
+  .metric-sub {
+    font-size: 11px;
+    color: var(--text3);
+    margin-top: 4px;
+    font-family: var(--mono);
+  }
+
+  /* ── Chart card ── */
+  .card {
+    background: var(--bg2);
+    border: 0.5px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 22px;
+    margin-bottom: 16px;
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+  }
+
+  .card-title {
+    font-size: 12px;
+    font-family: var(--mono);
+    font-weight: 500;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .chart-wrap {
+    position: relative;
+    width: 100%;
+    height: 220px;
+  }
+
+  /* ── Log ── */
+  .log-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 320px;
+    overflow-y: auto;
+  }
+
+  .log-list::-webkit-scrollbar { width: 4px; }
+  .log-list::-webkit-scrollbar-track { background: transparent; }
+  .log-list::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  .log-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    background: var(--bg3);
+    border-radius: 8px;
+    border: 0.5px solid var(--border);
+    animation: fadeIn 0.3s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .log-bar {
+    width: 2px;
+    border-radius: 2px;
+    flex-shrink: 0;
+    align-self: stretch;
+    min-height: 16px;
+  }
+
+  .log-body { flex: 1; }
+
+  .log-text {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text);
+    line-height: 1.5;
+  }
+
+  .log-time {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text3);
+    margin-top: 2px;
+  }
+
+  /* ── Install height control ── */
+  .control-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .control-row label {
+    font-size: 12px;
+    color: var(--text2);
+    font-family: var(--mono);
+    white-space: nowrap;
+  }
+
+  .control-row input[type=range] {
+    flex: 1;
+    accent-color: var(--blue);
+  }
+
+  .control-val {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    min-width: 52px;
+    text-align: right;
+  }
+
+  /* ── Footer ── */
+  .footer {
+    margin-top: 32px;
+    padding-top: 20px;
+    border-top: 0.5px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text3);
+  }
+
+  /* ── Connection error banner ── */
+  .banner {
+    display: none;
+    padding: 10px 16px;
+    background: var(--amber-dim);
+    border: 0.5px solid var(--amber);
+    border-radius: 8px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--amber);
+    margin-bottom: 20px;
+  }
+  .banner.show { display: block; }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- Nav -->
+  <nav>
+    <div class="nav-brand">
+      <div class="logo">
+        <svg viewBox="0 0 24 24"><path d="M12 2C6 2 3 7 3 12s3 10 9 10 9-5 9-10S18 2 12 2z"/><path d="M12 6v6l4 2"/></svg>
+      </div>
+      FLOOD / MONITOR
+    </div>
+    <div class="nav-right">
+      <span id="lastUpdate">—</span>
+      <div class="status-pill normal" id="statusPill">
+        <div class="status-dot"></div>
+        <span id="statusText">Normal</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Connection error -->
+  <div class="banner" id="banner">
+    Cannot reach Supabase — check your SUPABASE_URL and SUPABASE_KEY in config.
+  </div>
+
+  <!-- Metrics -->
+  <div class="metrics">
+    <div class="metric">
+      <div class="metric-label">Water level</div>
+      <div class="metric-value" id="mWater">—<span class="metric-unit">cm</span></div>
+      <div class="metric-sub" id="mWaterSub">waiting for data</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Distance</div>
+      <div class="metric-value" id="mDist">—<span class="metric-unit">cm</span></div>
+      <div class="metric-sub" id="mDistSub">ultrasonic</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Install height</div>
+      <div class="metric-value" id="mHeight">50<span class="metric-unit">cm</span></div>
+      <div class="metric-sub">adjustable below</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Alarms today</div>
+      <div class="metric-value" id="mAlarms">0<span class="metric-unit">times</span></div>
+      <div class="metric-sub" id="mAlarmSub">since midnight</div>
+    </div>
+  </div>
+
+  <!-- Chart -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Water level history</div>
+      <div style="font-family:var(--mono);font-size:11px;color:var(--text3)">last 30 readings</div>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="wlChart" role="img" aria-label="Water level over time line chart">Water level readings.</canvas>
+    </div>
+  </div>
+
+  <!-- Install height -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Install height</div>
+    </div>
+    <div class="control-row">
+      <label>Sensor height (cm)</label>
+      <input type="range" min="10" max="300" value="50" step="1" id="heightSlider">
+      <span class="control-val" id="heightVal">50 cm</span>
+    </div>
+    <div style="margin-top:10px;font-family:var(--mono);font-size:11px;color:var(--text3)">
+      Water level = install height − measured distance. Set this to your actual sensor mounting height.
+    </div>
+  </div>
+
+  <!-- Log -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Alarm log</div>
+      <div style="font-family:var(--mono);font-size:11px;color:var(--text3)" id="logCount">0 events</div>
+    </div>
+    <div class="log-list" id="logList">
+      <div class="log-item">
+        <div class="log-bar" style="background:#4a4f5e"></div>
+        <div class="log-body">
+          <div class="log-text">Dashboard loaded — waiting for sensor data</div>
+          <div class="log-time" id="loadTime"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span>Flood Monitor v1.0</span>
+    <span id="footerUptime">uptime: 0 min</span>
+  </div>
+
+</div>
+
+<script>
+/* ══════════════════════════════════════════
+   CONFIG — replace these two values
+   ══════════════════════════════════════════ */
+const SUPABASE_URL = 'https://cbmleqcqohvaqelsbwuc.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNibWxlcWNxb2h2YXFlbHNid3VjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxNzgwMzYsImV4cCI6MjA5NDc1NDAzNn0.sYdbPsT1w3gocZlW6_pqazdKCbsun2cNStWe9Uiz8cg';
+const TABLE_NAME   = 'readings';
+const POLL_INTERVAL = 5000; // ms
+
+/* ══════════════════════════════════════════
+   State
+   ══════════════════════════════════════════ */
+let installHeight = 50;
+let alarmCount    = 0;
+let logCount      = 0;
+let startTime     = new Date();
+let chart         = null;
+
+const chartLabels = [];
+const chartData   = [];
+
+/* ══════════════════════════════════════════
+   Init
+   ══════════════════════════════════════════ */
+document.getElementById('loadTime').textContent = fmtTime(new Date());
+
+initChart();
+fetchLatest();
+setInterval(fetchLatest, POLL_INTERVAL);
+setInterval(updateUptime, 60000);
+
+/* ══════════════════════════════════════════
+   Height slider
+   ══════════════════════════════════════════ */
+document.getElementById('heightSlider').addEventListener('input', function() {
+  installHeight = parseInt(this.value);
+  document.getElementById('heightVal').textContent = installHeight + ' cm';
+  document.getElementById('mHeight').innerHTML = installHeight + '<span class="metric-unit">cm</span>';
+});
+
+/* ══════════════════════════════════════════
+   Fetch from Supabase
+   ══════════════════════════════════════════ */
+async function fetchLatest() {
+  try {
+    const res = await fetch(
+      SUPABASE_URL + '/rest/v1/readings?select=*&order=created_at.desc&limit=30',
+      {
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_KEY
+        }
+      }
+    );
+    const data = await res.json();
+    if (!data || data.length === 0) return;
+    hideBanner();
+    const latest = data[0];
+    updateMetrics(latest);
+    updateChart(data.reverse());
+    checkAlarms(data);
+  } catch(e) {
+    showBanner();
+  }
+}
+
+/* ══════════════════════════════════════════
+   Update UI
+   ══════════════════════════════════════════ */
+function updateMetrics(row) {
+  const wl   = parseFloat((row.water_level ?? 0).toFixed(1));
+  const dist = parseFloat((row.distance    ?? installHeight).toFixed(1));
+  const isAlarm = row.alarm === true;
+
+  document.getElementById('mWater').innerHTML   = wl   + '<span class="metric-unit">cm</span>';
+  document.getElementById('mDist').innerHTML    = dist + '<span class="metric-unit">cm</span>';
+  document.getElementById('mWaterSub').textContent = isAlarm ? '⚠ rising' : 'stable';
+  document.getElementById('mDistSub').textContent  = 'ultrasonic reading';
+  document.getElementById('lastUpdate').textContent = 'updated ' + fmtTime(new Date(row.created_at));
+
+  setStatus(isAlarm ? 'alarm' : wl === 0 ? 'sleep' : 'normal');
+
+  if (isAlarm) {
+    alarmCount++;
+    document.getElementById('mAlarms').innerHTML = alarmCount + '<span class="metric-unit">times</span>';
+    addLog(row.alarm ? 'red' : 'blue', row.alarm
+      ? '[ALARM] Water rising! ' + wl + ' cm'
+      : '[INFO] Water level: ' + wl + ' cm',
+      new Date(row.created_at));
+  }
+}
+
+function updateChart(rows) {
+  chartLabels.length = 0;
+  chartData.length   = 0;
+  rows.forEach(r => {
+    chartLabels.push(fmtTime(new Date(r.created_at)));
+    chartData.push(parseFloat((r.water_level ?? 0).toFixed(1)));
+  });
+  chart.update();
+}
+
+function checkAlarms(rows) {
+  const todayStart = new Date();
+  todayStart.setHours(0,0,0,0);
+  const todayAlarms = rows.filter(r => r.alarm && new Date(r.created_at) > todayStart);
+  alarmCount = todayAlarms.length;
+  document.getElementById('mAlarms').innerHTML = alarmCount + '<span class="metric-unit">times</span>';
+}
+
+/* ══════════════════════════════════════════
+   Status pill
+   ══════════════════════════════════════════ */
+function setStatus(state) {
+  const pill = document.getElementById('statusPill');
+  const text = document.getElementById('statusText');
+  pill.className = 'status-pill ' + state;
+  text.textContent = state === 'alarm' ? 'Alarm' : state === 'sleep' ? 'Sleeping' : 'Normal';
+}
+
+/* ══════════════════════════════════════════
+   Log
+   ══════════════════════════════════════════ */
+function addLog(color, text, time) {
+  logCount++;
+  document.getElementById('logCount').textContent = logCount + ' events';
+
+  const colors = { red: '#ef4444', blue: '#3b82f6', green: '#22c55e', gray: '#4a4f5e' };
+  const item = document.createElement('div');
+  item.className = 'log-item';
+  item.innerHTML = `
+    <div class="log-bar" style="background:${colors[color]||colors.gray}"></div>
+    <div class="log-body">
+      <div class="log-text">${text}</div>
+      <div class="log-time">${fmtTime(time || new Date())}</div>
+    </div>`;
+  const list = document.getElementById('logList');
+  list.insertBefore(item, list.firstChild);
+  if (list.children.length > 50) list.removeChild(list.lastChild);
+}
+
+/* ══════════════════════════════════════════
+   Chart init
+   ══════════════════════════════════════════ */
+function initChart() {
+  const ctx = document.getElementById('wlChart').getContext('2d');
+  chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: chartLabels,
+      datasets: [{
+        label: 'Water level (cm)',
+        data: chartData,
+        borderColor: '#3b82f6',
+        backgroundColor: 'rgba(59,130,246,0.06)',
+        borderWidth: 1.5,
+        pointRadius: 2.5,
+        pointBackgroundColor: '#3b82f6',
+        fill: true,
+        tension: 0.4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: {
+          ticks: { font: { size: 10, family: 'DM Mono' }, color: '#4a4f5e', maxTicksLimit: 8 },
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          border: { color: 'rgba(255,255,255,0.07)' }
+        },
+        y: {
+          min: 0,
+          suggestedMax: 10,
+          ticks: { font: { size: 10, family: 'DM Mono' }, color: '#4a4f5e', callback: v => v + ' cm' },
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          border: { color: 'rgba(255,255,255,0.07)' }
+        }
+      }
+    }
+  });
+}
+
+/* ══════════════════════════════════════════
+   Helpers
+   ══════════════════════════════════════════ */
+function fmtTime(d) {
+  return d.toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+function updateUptime() {
+  const min = Math.floor((Date.now() - startTime) / 60000);
+  document.getElementById('footerUptime').textContent = 'uptime: ' + min + ' min';
+}
+
+function showBanner() { document.getElementById('banner').classList.add('show'); }
+function hideBanner() { document.getElementById('banner').classList.remove('show'); }
+</script>
+</body>
+</html>
