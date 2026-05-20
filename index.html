@@ -3,467 +3,863 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Flood Monitor</title>
+<title>Smart Flood Sentinel Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
-  /* ── Config ── */
   :root {
-    --bg:        #0a0c0f;
-    --bg2:       #111318;
-    --bg3:       #181c23;
-    --border:    rgba(255,255,255,0.07);
-    --border2:   rgba(255,255,255,0.12);
-    --text:      #e8eaf0;
-    --text2:     #7c8191;
-    --text3:     #4a4f5e;
-    --blue:      #3b82f6;
-    --blue-dim:  rgba(59,130,246,0.12);
-    --green:     #22c55e;
-    --green-dim: rgba(34,197,94,0.12);
-    --red:       #ef4444;
-    --red-dim:   rgba(239,68,68,0.12);
-    --amber:     #f59e0b;
-    --amber-dim: rgba(245,158,11,0.12);
-    --mono:      'DM Mono', monospace;
-    --sans:      'DM Sans', sans-serif;
+    --page: #0a0f17;
+    --surface: #111827;
+    --surface-soft: #162131;
+    --surface-raised: #1a2636;
+    --border: rgba(148, 163, 184, 0.18);
+    --border-strong: rgba(148, 163, 184, 0.32);
+    --text: #eef4fb;
+    --muted: #9aa9bb;
+    --faint: #748295;
+    --blue: #4da3ff;
+    --blue-soft: rgba(77, 163, 255, 0.14);
+    --safe: #42d392;
+    --safe-soft: rgba(66, 211, 146, 0.14);
+    --warning: #f5c451;
+    --warning-soft: rgba(245, 196, 81, 0.16);
+    --critical: #ff6b63;
+    --critical-soft: rgba(255, 107, 99, 0.16);
+    --shadow: 0 22px 55px rgba(0, 0, 0, 0.32);
+    --radius: 8px;
   }
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+  * { box-sizing: border-box; }
 
   body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--sans);
-    font-size: 14px;
+    margin: 0;
     min-height: 100vh;
-    line-height: 1.6;
+    background:
+      radial-gradient(circle at top left, rgba(77, 163, 255, 0.18), transparent 360px),
+      linear-gradient(180deg, rgba(22, 33, 49, 0.92), rgba(10, 15, 23, 0) 380px),
+      var(--page);
+    color: var(--text);
+    font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    line-height: 1.5;
   }
 
-  /* ── Layout ── */
+  @keyframes pageIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes softPulse {
+    0%, 100% { box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 12%, transparent); }
+    50% { box-shadow: 0 0 0 7px color-mix(in srgb, currentColor 5%, transparent); }
+  }
+
+  @keyframes alertIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
   .shell {
-    max-width: 1100px;
+    width: min(1280px, calc(100% - 24px));
     margin: 0 auto;
-    padding: 0 24px 60px;
+    padding: 14px 0 14px;
+    animation: pageIn 420ms ease-out both;
   }
 
-  /* ── Nav ── */
-  nav {
+  .topbar,
+  .brand,
+  .top-actions,
+  .section-header,
+  .section-title,
+  .alert-top,
+  .metric-row,
+  .footer {
     display: flex;
+  }
+
+  .topbar {
     align-items: center;
     justify-content: space-between;
-    padding: 20px 0;
-    border-bottom: 0.5px solid var(--border);
-    margin-bottom: 32px;
+    gap: 14px;
+    margin-bottom: 12px;
   }
 
-  .nav-brand {
-    display: flex;
+  .brand {
     align-items: center;
-    gap: 10px;
-    font-family: var(--mono);
-    font-size: 13px;
-    font-weight: 500;
-    letter-spacing: 0.04em;
-    color: var(--text);
+    gap: 12px;
+    min-width: 0;
   }
 
-  .nav-brand .logo {
-    width: 28px;
-    height: 28px;
-    border-radius: 8px;
-    background: var(--blue-dim);
-    border: 0.5px solid var(--blue);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  .brand-mark,
+  .icon-box,
+  .alert-icon {
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    border-radius: var(--radius);
   }
 
-  .nav-brand .logo svg {
-    width: 14px;
-    height: 14px;
-    stroke: var(--blue);
+  .brand-mark {
+    width: 38px;
+    height: 38px;
+    background: #0f527d;
+    color: #fff;
+    box-shadow: 0 10px 24px rgba(15, 82, 125, 0.22);
+  }
+
+  svg {
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
     fill: none;
     stroke-width: 2;
     stroke-linecap: round;
+    stroke-linejoin: round;
   }
 
-  .nav-right {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 12px;
-    color: var(--text2);
-  }
-
-  .status-pill {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 4px 10px;
-    border-radius: 99px;
-    font-family: var(--mono);
+  .eyebrow {
+    margin: 0;
+    color: var(--muted);
     font-size: 11px;
-    font-weight: 500;
-    border: 0.5px solid;
-    transition: all 0.3s;
-  }
-
-  .status-pill.normal { background: var(--green-dim); border-color: var(--green); color: var(--green); }
-  .status-pill.alarm  { background: var(--red-dim);   border-color: var(--red);   color: var(--red); }
-  .status-pill.sleep  { background: var(--amber-dim); border-color: var(--amber); color: var(--amber); }
-
-  .status-dot {
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: currentColor;
-    animation: pulse 2s infinite;
-  }
-
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.4; }
-  }
-
-  /* ── Metrics ── */
-  .metrics {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
-    margin-bottom: 24px;
-  }
-
-  @media (max-width: 700px) {
-    .metrics { grid-template-columns: repeat(2, 1fr); }
-  }
-
-  .metric {
-    background: var(--bg2);
-    border: 0.5px solid var(--border);
-    border-radius: 12px;
-    padding: 16px 18px;
-    transition: border-color 0.3s;
-  }
-
-  .metric:hover { border-color: var(--border2); }
-
-  .metric-label {
-    font-size: 11px;
-    color: var(--text2);
+    font-weight: 800;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
-    margin-bottom: 8px;
-    font-family: var(--mono);
   }
 
-  .metric-value {
-    font-family: var(--mono);
-    font-size: 28px;
-    font-weight: 500;
-    color: var(--text);
-    line-height: 1;
+  h1 {
+    margin: 1px 0 0;
+    font-size: clamp(22px, 2.4vw, 30px);
+    line-height: 1.05;
+    letter-spacing: 0;
   }
 
-  .metric-unit {
-    font-size: 13px;
-    color: var(--text2);
-    margin-left: 2px;
+  .top-actions {
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 10px;
   }
 
-  .metric-sub {
+  .chip,
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 28px;
+    padding: 5px 9px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: rgba(17, 24, 39, 0.78);
+    color: var(--muted);
     font-size: 11px;
-    color: var(--text3);
-    margin-top: 4px;
-    font-family: var(--mono);
+    font-weight: 800;
+    white-space: nowrap;
   }
 
-  /* ── Chart card ── */
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 99px;
+    background: currentColor;
+    box-shadow: 0 0 0 4px color-mix(in srgb, currentColor 14%, transparent);
+    animation: softPulse 2.4s ease-in-out infinite;
+  }
+
+  .banner {
+    display: none;
+    margin-bottom: 10px;
+    padding: 10px 12px;
+    border: 1px solid rgba(196, 60, 52, 0.28);
+    border-radius: var(--radius);
+    background: var(--critical-soft);
+    color: var(--critical);
+    font-weight: 800;
+  }
+
+  .banner.show { display: block; }
+
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(420px, 0.95fr);
+    gap: 12px;
+    align-items: start;
+  }
+
+  aside {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 12px;
+    max-height: calc(100vh - 92px);
+    min-height: 0;
+  }
+
   .card {
-    background: var(--bg2);
-    border: 0.5px solid var(--border);
-    border-radius: 12px;
-    padding: 20px 22px;
-    margin-bottom: 16px;
+    background: rgba(17, 24, 39, 0.92);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
   }
 
-  .card-header {
+  .layout > div > .card,
+  aside > .card {
+    animation: pageIn 420ms ease-out both;
+  }
+
+  .layout > div > .card:nth-child(1) { animation-delay: 30ms; }
+  .layout > div > .card:nth-child(2) { animation-delay: 70ms; }
+  .layout > div > .card:nth-child(3) { animation-delay: 110ms; }
+  aside > .card:nth-child(1) { animation-delay: 80ms; }
+  aside > .card:nth-child(2) { animation-delay: 120ms; }
+
+  .card:hover {
+    transform: translateY(-2px);
+    border-color: var(--border-strong);
+    box-shadow: 0 24px 58px rgba(0, 0, 0, 0.38);
+  }
+
+  .card-pad { padding: 12px; }
+
+  .status-card {
+    position: relative;
+    min-height: 210px;
+    overflow: hidden;
+  }
+
+  .status-card.safe {
+    background: linear-gradient(145deg, rgba(17, 24, 39, 0.94), rgba(66, 211, 146, 0.06));
+  }
+
+  .status-card.warning {
+    background: linear-gradient(145deg, rgba(17, 24, 39, 0.94), rgba(245, 196, 81, 0.08));
+  }
+
+  .status-card.critical {
+    background: linear-gradient(145deg, rgba(17, 24, 39, 0.94), rgba(255, 107, 99, 0.1));
+  }
+
+  .status-card::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 4px;
+    background: var(--faint);
+  }
+
+  .status-card.safe::before { background: var(--safe); }
+  .status-card.warning::before { background: var(--warning); }
+  .status-card.critical::before { background: var(--critical); }
+
+  .status-head {
     display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .status-title {
+    margin: 6px 0 3px;
+    font-size: clamp(32px, 4.8vw, 46px);
+    line-height: 0.95;
+    letter-spacing: 0;
+  }
+
+  .status-copy {
+    max-width: 580px;
+    margin: 0;
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface-soft);
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .safe .status-badge,
+  .badge.safe { background: var(--safe-soft); color: var(--safe); border-color: rgba(22, 130, 90, 0.22); }
+  .warning .status-badge,
+  .badge.warning { background: var(--warning-soft); color: var(--warning); border-color: rgba(173, 117, 27, 0.25); }
+  .critical .status-badge,
+  .badge.critical { background: var(--critical-soft); color: var(--critical); border-color: rgba(196, 60, 52, 0.24); }
+
+  .summary-grid,
+  .telemetry-grid {
+    display: grid;
+    gap: 8px;
+  }
+
+  .summary-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .telemetry-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  .summary-item,
+  .metric-card {
+    min-width: 0;
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface-soft);
+    transition: transform 160ms ease, background-color 160ms ease, border-color 160ms ease;
+  }
+
+  .summary-item:hover,
+  .metric-card:hover {
+    transform: translateY(-1px);
+    border-color: var(--border-strong);
+  }
+
+  .metric-card { background: var(--surface-raised); }
+
+  .label {
+    margin: 0 0 6px;
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .value {
+    margin: 0;
+    color: var(--text);
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 1.05;
+    overflow-wrap: anywhere;
+  }
+
+  .unit {
+    margin-left: 3px;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .subtext {
+    margin: 5px 0 0;
+    color: var(--faint);
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .section {
+    margin-top: 12px;
+  }
+
+  aside .section {
+    margin-top: 0;
+    min-height: 0;
+  }
+
+  aside .section.card {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .section-header {
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 18px;
+    gap: 10px;
+    margin-bottom: 9px;
   }
 
-  .card-title {
-    font-size: 12px;
-    font-family: var(--mono);
-    font-weight: 500;
-    color: var(--text2);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
+  .section-title {
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .icon-box,
+  .alert-icon {
+    width: 30px;
+    height: 30px;
+    background: var(--blue-soft);
+    color: var(--blue);
+    transition: transform 180ms ease, box-shadow 180ms ease;
+  }
+
+  .metric-card:hover .icon-box,
+  .section-header:hover .icon-box {
+    transform: scale(1.03);
+  }
+
+  .icon-box.safe,
+  .alert-icon.safe { background: var(--safe-soft); color: var(--safe); }
+  .icon-box.warning,
+  .alert-icon.warning { background: var(--warning-soft); color: var(--warning); }
+  .icon-box.critical,
+  .alert-icon.critical { background: var(--critical-soft); color: var(--critical); }
+
+  h2 {
+    margin: 0;
+    font-size: 15px;
+    letter-spacing: 0;
+  }
+
+  .section-note {
+    margin: 2px 0 0;
+    color: var(--muted);
+    font-size: 11px;
+  }
+
+  .metric-row {
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
   }
 
   .chart-wrap {
     position: relative;
-    width: 100%;
-    height: 220px;
+    height: 180px;
+    animation: alertIn 360ms ease-out both;
   }
 
-  /* ── Log ── */
-  .log-list {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    max-height: 320px;
-    overflow-y: auto;
+  .chart-empty {
+    display: none;
+    position: absolute;
+    inset: 0;
+    place-items: center;
+    padding: 12px;
+    border: 1px dashed var(--border-strong);
+    border-radius: var(--radius);
+    background: rgba(17, 24, 39, 0.86);
+    color: var(--muted);
+    text-align: center;
+    font-weight: 800;
   }
 
-  .log-list::-webkit-scrollbar { width: 4px; }
-  .log-list::-webkit-scrollbar-track { background: transparent; }
-  .log-list::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+  .chart-wrap.empty canvas { opacity: 0; }
+  .chart-wrap.empty .chart-empty { display: grid; }
 
-  .log-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    padding: 10px 12px;
-    background: var(--bg3);
-    border-radius: 8px;
-    border: 0.5px solid var(--border);
-    animation: fadeIn 0.3s ease;
-  }
-
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-4px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-
-  .log-bar {
-    width: 2px;
-    border-radius: 2px;
-    flex-shrink: 0;
-    align-self: stretch;
-    min-height: 16px;
-  }
-
-  .log-body { flex: 1; }
-
-  .log-text {
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--text);
-    line-height: 1.5;
-  }
-
-  .log-time {
-    font-family: var(--mono);
-    font-size: 10px;
-    color: var(--text3);
-    margin-top: 2px;
-  }
-
-  /* ── Install height control ── */
   .control-row {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
     align-items: center;
-    gap: 12px;
   }
 
-  .control-row label {
-    font-size: 12px;
-    color: var(--text2);
-    font-family: var(--mono);
-    white-space: nowrap;
-  }
-
-  .control-row input[type=range] {
-    flex: 1;
+  input[type=range] {
+    width: 100%;
     accent-color: var(--blue);
   }
 
-  .control-val {
-    font-family: var(--mono);
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text);
-    min-width: 52px;
-    text-align: right;
+  .alerts-list {
+    display: grid;
+    gap: 8px;
+    max-height: none;
+    min-height: 0;
+    overflow: auto;
+    padding-right: 4px;
   }
 
-  /* ── Footer ── */
-  .footer {
-    margin-top: 32px;
-    padding-top: 20px;
-    border-top: 0.5px solid var(--border);
-    display: flex;
-    align-items: center;
+  .alerts-list::-webkit-scrollbar { width: 8px; }
+  .alerts-list::-webkit-scrollbar-track { background: transparent; }
+  .alerts-list::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 999px; }
+
+  .alert-item {
+    display: grid;
+    grid-template-columns: 30px minmax(0, 1fr);
+    gap: 8px;
+    padding: 9px;
+    border: 1px solid var(--border);
+    border-left: 5px solid var(--warning);
+    border-radius: var(--radius);
+    background: var(--surface-raised);
+    animation: alertIn 240ms ease-out both;
+    transition: transform 160ms ease, border-color 160ms ease, background-color 160ms ease;
+  }
+
+  .alert-item:hover {
+    transform: translateX(2px);
+    border-color: var(--border-strong);
+  }
+
+  .alert-item.critical {
+    border-left-color: var(--critical);
+    background: linear-gradient(90deg, rgba(255, 107, 99, 0.16), var(--surface-raised) 62%);
+  }
+
+  .alert-item.safe { border-left-color: var(--safe); }
+
+  .alert-top {
+    align-items: flex-start;
     justify-content: space-between;
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--text3);
+    gap: 8px;
   }
 
-  /* ── Connection error banner ── */
-  .banner {
-    display: none;
-    padding: 10px 16px;
-    background: var(--amber-dim);
-    border: 0.5px solid var(--amber);
-    border-radius: 8px;
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--amber);
-    margin-bottom: 20px;
+  .alert-title {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 800;
   }
-  .banner.show { display: block; }
+
+  .alert-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 5px;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .empty-state,
+  .loading-state {
+    padding: 18px 12px;
+    border: 1px dashed var(--border-strong);
+    border-radius: var(--radius);
+    background: var(--surface-soft);
+    color: var(--muted);
+    text-align: center;
+    font-weight: 800;
+  }
+
+  .footer {
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+    padding: 8px 2px 0;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 800;
+  }
+
+  .skeleton {
+    position: relative;
+    display: inline-block;
+    min-width: 82px;
+    color: transparent !important;
+    overflow: hidden;
+    border-radius: 4px;
+    background: #263346;
+  }
+
+  .skeleton::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.68), transparent);
+    animation: shimmer 1.2s infinite;
+  }
+
+  @keyframes shimmer {
+    100% { transform: translateX(100%); }
+  }
+
+  @media (max-width: 940px) {
+    .layout { grid-template-columns: 1fr; }
+    .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    aside {
+      max-height: none;
+    }
+    .alerts-list {
+      max-height: 360px;
+    }
+  }
+
+  @media (max-width: 720px) {
+    .shell {
+      width: min(100% - 20px, 1180px);
+      padding-top: 14px;
+    }
+
+    .topbar,
+    .status-head {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
+    .top-actions {
+      justify-content: flex-start;
+      width: 100%;
+    }
+
+    .summary-grid { grid-template-columns: 1fr; }
+    .card-pad { padding: 14px; }
+    .chart-wrap { height: 240px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      scroll-behavior: auto !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
 </style>
 </head>
 <body>
-<div class="shell">
-
-  <!-- Nav -->
-  <nav>
-    <div class="nav-brand">
-      <div class="logo">
-        <svg viewBox="0 0 24 24"><path d="M12 2C6 2 3 7 3 12s3 10 9 10 9-5 9-10S18 2 12 2z"/><path d="M12 6v6l4 2"/></svg>
+<main class="shell">
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M12 3c3.5 4 6 7.2 6 10.4A6 6 0 0 1 6 13.4C6 10.2 8.5 7 12 3Z"></path><path d="M8.8 14.4c.6 1.7 1.9 2.6 3.7 2.6"></path></svg>
       </div>
-      FLOOD / MONITOR
-    </div>
-    <div class="nav-right">
-      <span id="lastUpdate">—</span>
-      <div class="status-pill normal" id="statusPill">
-        <div class="status-dot"></div>
-        <span id="statusText">Normal</span>
+      <div>
+        <p class="eyebrow">Residential IoT Security</p>
+        <h1>Smart Flood Sentinel</h1>
       </div>
     </div>
-  </nav>
+    <div class="top-actions">
+      <span class="chip" id="nodeChip">Node: live feed</span>
+      <span class="chip" id="connectionChip"><span class="dot"></span> Connecting</span>
+      <span class="chip" id="lastUpdatedChip">Last update: pending</span>
+    </div>
+  </header>
 
-  <!-- Connection error -->
-  <div class="banner" id="banner">
-    Cannot reach Supabase — check your SUPABASE_URL and SUPABASE_KEY in config.
-  </div>
+  <div class="banner" id="banner">Unable to load dashboard readings. Check the existing data connection and try again.</div>
 
-  <!-- Metrics -->
-  <div class="metrics">
-    <div class="metric">
-      <div class="metric-label">Water level</div>
-      <div class="metric-value" id="mWater">—<span class="metric-unit">cm</span></div>
-      <div class="metric-sub" id="mWaterSub">waiting for data</div>
-    </div>
-    <div class="metric">
-      <div class="metric-label">Distance</div>
-      <div class="metric-value" id="mDist">—<span class="metric-unit">cm</span></div>
-      <div class="metric-sub" id="mDistSub">ultrasonic</div>
-    </div>
-    <div class="metric">
-      <div class="metric-label">Install height</div>
-      <div class="metric-value" id="mHeight">50<span class="metric-unit">cm</span></div>
-      <div class="metric-sub">adjustable below</div>
-    </div>
-    <div class="metric">
-      <div class="metric-label">Alarms today</div>
-      <div class="metric-value" id="mAlarms">0<span class="metric-unit">times</span></div>
-      <div class="metric-sub" id="mAlarmSub">since midnight</div>
-    </div>
-  </div>
-
-  <!-- Chart -->
-  <div class="card">
-    <div class="card-header">
-      <div class="card-title">Water level history</div>
-      <div style="font-family:var(--mono);font-size:11px;color:var(--text3)">last 30 readings</div>
-    </div>
-    <div class="chart-wrap">
-      <canvas id="wlChart" role="img" aria-label="Water level over time line chart">Water level readings.</canvas>
-    </div>
-  </div>
-
-  <!-- Install height -->
-  <div class="card">
-    <div class="card-header">
-      <div class="card-title">Install height</div>
-    </div>
-    <div class="control-row">
-      <label>Sensor height (cm)</label>
-      <input type="range" min="10" max="300" value="50" step="1" id="heightSlider">
-      <span class="control-val" id="heightVal">50 cm</span>
-    </div>
-    <div style="margin-top:10px;font-family:var(--mono);font-size:11px;color:var(--text3)">
-      Water level = install height − measured distance. Set this to your actual sensor mounting height.
-    </div>
-  </div>
-
-  <!-- Log -->
-  <div class="card">
-    <div class="card-header">
-      <div class="card-title">Alarm log</div>
-      <div style="font-family:var(--mono);font-size:11px;color:var(--text3)" id="logCount">0 events</div>
-    </div>
-    <div class="log-list" id="logList">
-      <div class="log-item">
-        <div class="log-bar" style="background:#4a4f5e"></div>
-        <div class="log-body">
-          <div class="log-text">Dashboard loaded — waiting for sensor data</div>
-          <div class="log-time" id="loadTime"></div>
+  <section class="layout">
+    <div>
+      <article class="card card-pad status-card" id="statusCard">
+        <div class="status-head">
+          <div>
+            <span class="status-badge" id="statusBadge"><span class="dot"></span> Loading</span>
+            <h2 class="status-title" id="statusTitle">Waiting</h2>
+            <p class="status-copy" id="statusCopy">Fetching the latest ESP32 flood monitoring telemetry.</p>
+          </div>
         </div>
-      </div>
+
+        <div class="summary-grid">
+          <div class="summary-item">
+            <p class="label">Current Water Level</p>
+            <p class="value" id="summaryWater"><span class="skeleton">00.0 cm</span></p>
+            <p class="subtext" id="summaryWaterSub">Ultrasonic level reading</p>
+          </div>
+          <div class="summary-item">
+            <p class="label">Leak Sensor</p>
+            <p class="value" id="summaryLeak"><span class="skeleton">Pending</span></p>
+            <p class="subtext" id="summaryLeakSub">Water contact state</p>
+          </div>
+          <div class="summary-item">
+            <p class="label">Last Updated</p>
+            <p class="value" id="summaryUpdated"><span class="skeleton">--:--</span></p>
+            <p class="subtext" id="summaryUpdatedSub">Local time</p>
+          </div>
+          <div class="summary-item">
+            <p class="label">Device Status</p>
+            <p class="value" id="summaryDevice"><span class="skeleton">Checking</span></p>
+            <p class="subtext" id="summaryDeviceSub">Based on latest reading</p>
+          </div>
+        </div>
+      </article>
+
+      <section class="section card card-pad">
+        <div class="section-header">
+          <div class="section-title">
+            <div class="icon-box" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M4 19h16"></path><path d="M6 16l4-4 3 3 5-7"></path><path d="M18 8h-4"></path><path d="M18 8v4"></path></svg>
+            </div>
+            <div>
+              <h2>Water Level Trend</h2>
+              <p class="section-note">Simple view of recent sensor readings</p>
+            </div>
+          </div>
+          <span class="badge" id="historyCount">Loading</span>
+        </div>
+        <div class="chart-wrap empty" id="chartWrap">
+          <canvas id="wlChart" role="img" aria-label="Water level over time line chart"></canvas>
+          <div class="chart-empty" id="chartEmpty">No trend data yet. Readings will appear here once telemetry is available.</div>
+        </div>
+      </section>
+
+      <section class="section card card-pad">
+        <div class="section-header">
+          <div class="section-title">
+            <div class="icon-box" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M12 20V10"></path><path d="M18 20V4"></path><path d="M6 20v-4"></path></svg>
+            </div>
+            <div>
+              <h2>Sensor Setup</h2>
+              <p class="section-note">Keep the existing install-height calculation available</p>
+            </div>
+          </div>
+          <span class="badge" id="heightBadge">50 cm</span>
+        </div>
+        <div class="control-row">
+          <input type="range" min="10" max="300" value="50" step="1" id="heightSlider" aria-label="Sensor height in centimeters">
+          <strong id="heightVal">50 cm</strong>
+        </div>
+        <p class="subtext">Water level is calculated as install height minus measured distance when distance data is available.</p>
+      </section>
     </div>
-  </div>
 
-  <div class="footer">
-    <span>Flood Monitor v1.0</span>
+    <aside>
+      <section class="card card-pad">
+        <div class="section-header">
+          <div class="section-title">
+            <div class="icon-box" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M3 17c2 0 2-1 4-1s2 1 4 1 2-1 4-1 2 1 4 1 2-1 4-1"></path><path d="M3 21c2 0 2-1 4-1s2 1 4 1 2-1 4-1 2 1 4 1 2-1 4-1"></path><path d="M12 3c2.2 2.4 3.5 4.4 3.5 6.1a3.5 3.5 0 0 1-7 0C8.5 7.4 9.8 5.4 12 3Z"></path></svg>
+            </div>
+            <div>
+              <h2>Latest Telemetry</h2>
+              <p class="section-note">Readable sensor status for demos</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="telemetry-grid">
+          <div class="metric-card">
+            <div class="metric-row">
+              <div>
+                <p class="label">Water Level</p>
+                <p class="value" id="mWater">--<span class="unit">cm</span></p>
+              </div>
+              <div class="icon-box" id="waterIcon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M3 17c2 0 2-1 4-1s2 1 4 1 2-1 4-1 2 1 4 1 2-1 4-1"></path><path d="M12 3c2.2 2.4 3.5 4.4 3.5 6.1a3.5 3.5 0 0 1-7 0C8.5 7.4 9.8 5.4 12 3Z"></path></svg>
+              </div>
+            </div>
+            <p class="subtext" id="mWaterSub">Waiting for data</p>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-row">
+              <div>
+                <p class="label">Leak Sensor</p>
+                <p class="value" id="mLeak">--</p>
+              </div>
+              <div class="icon-box" id="leakIcon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M12 3c3.5 4 6 7.2 6 10.4A6 6 0 0 1 6 13.4C6 10.2 8.5 7 12 3Z"></path></svg>
+              </div>
+            </div>
+            <p class="subtext" id="mLeakSub">No reading received</p>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-row">
+              <div>
+                <p class="label">Distance</p>
+                <p class="value" id="mDist">--<span class="unit">cm</span></p>
+              </div>
+              <div class="icon-box" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M4 5h16"></path><path d="M4 19h16"></path><path d="M8 9v6"></path><path d="M16 9v6"></path></svg>
+              </div>
+            </div>
+            <p class="subtext" id="mDistSub">Ultrasonic sensor distance</p>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-row">
+              <div>
+                <p class="label">Alerts Today</p>
+                <p class="value" id="mAlarms">0<span class="unit">events</span></p>
+              </div>
+              <div class="icon-box warning" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M10.3 4.3 2.8 17a2 2 0 0 0 1.7 3h15a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>
+              </div>
+            </div>
+            <p class="subtext" id="mAlarmSub">Since midnight</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section card card-pad">
+        <div class="section-header">
+          <div class="section-title">
+            <div class="icon-box" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path><path d="M13.7 21a2 2 0 0 1-3.4 0"></path></svg>
+            </div>
+            <div>
+              <h2>Recent Alerts</h2>
+              <p class="section-note">Warning and critical events</p>
+            </div>
+          </div>
+          <span class="badge" id="logCount">Loading</span>
+        </div>
+        <div class="alerts-list" id="logList">
+          <div class="loading-state">Loading alert history...</div>
+        </div>
+      </section>
+    </aside>
+  </section>
+
+  <footer class="footer">
+    <span>Smart Flood Sentinel dashboard</span>
     <span id="footerUptime">uptime: 0 min</span>
-  </div>
-
-</div>
+  </footer>
+</main>
 
 <script>
-/* ══════════════════════════════════════════
-   CONFIG — replace these two values
-   ══════════════════════════════════════════ */
 const SUPABASE_URL = 'https://cbmleqcqohvaqelsbwuc.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNibWxlcWNxb2h2YXFlbHNid3VjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxNzgwMzYsImV4cCI6MjA5NDc1NDAzNn0.sYdbPsT1w3gocZlW6_pqazdKCbsun2cNStWe9Uiz8cg';
-const TABLE_NAME   = 'readings';
-const POLL_INTERVAL = 5000; // ms
+const TABLE_NAME = 'readings';
+const POLL_INTERVAL = 5000;
+const OFFLINE_AFTER_MS = 30000;
 
-/* ══════════════════════════════════════════
-   State
-   ══════════════════════════════════════════ */
 let installHeight = 50;
-let alarmCount    = 0;
-let logCount      = 0;
-let startTime     = new Date();
-let chart         = null;
+let startTime = new Date();
+let chart = null;
 
 const chartLabels = [];
-const chartData   = [];
+const chartData = [];
 
-/* ══════════════════════════════════════════
-   Init
-   ══════════════════════════════════════════ */
-document.getElementById('loadTime').textContent = fmtTime(new Date());
+const els = {
+  banner: document.getElementById('banner'),
+  connectionChip: document.getElementById('connectionChip'),
+  nodeChip: document.getElementById('nodeChip'),
+  lastUpdatedChip: document.getElementById('lastUpdatedChip'),
+  statusCard: document.getElementById('statusCard'),
+  statusBadge: document.getElementById('statusBadge'),
+  statusTitle: document.getElementById('statusTitle'),
+  statusCopy: document.getElementById('statusCopy'),
+  summaryWater: document.getElementById('summaryWater'),
+  summaryWaterSub: document.getElementById('summaryWaterSub'),
+  summaryLeak: document.getElementById('summaryLeak'),
+  summaryLeakSub: document.getElementById('summaryLeakSub'),
+  summaryUpdated: document.getElementById('summaryUpdated'),
+  summaryUpdatedSub: document.getElementById('summaryUpdatedSub'),
+  summaryDevice: document.getElementById('summaryDevice'),
+  summaryDeviceSub: document.getElementById('summaryDeviceSub'),
+  mWater: document.getElementById('mWater'),
+  mWaterSub: document.getElementById('mWaterSub'),
+  mLeak: document.getElementById('mLeak'),
+  mLeakSub: document.getElementById('mLeakSub'),
+  mDist: document.getElementById('mDist'),
+  mDistSub: document.getElementById('mDistSub'),
+  mAlarms: document.getElementById('mAlarms'),
+  mAlarmSub: document.getElementById('mAlarmSub'),
+  waterIcon: document.getElementById('waterIcon'),
+  leakIcon: document.getElementById('leakIcon'),
+  logList: document.getElementById('logList'),
+  logCount: document.getElementById('logCount'),
+  historyCount: document.getElementById('historyCount'),
+  chartWrap: document.getElementById('chartWrap'),
+  heightSlider: document.getElementById('heightSlider'),
+  heightVal: document.getElementById('heightVal'),
+  heightBadge: document.getElementById('heightBadge'),
+  footerUptime: document.getElementById('footerUptime')
+};
 
 initChart();
 fetchLatest();
 setInterval(fetchLatest, POLL_INTERVAL);
 setInterval(updateUptime, 60000);
 
-/* ══════════════════════════════════════════
-   Height slider
-   ══════════════════════════════════════════ */
-document.getElementById('heightSlider').addEventListener('input', function() {
-  installHeight = parseInt(this.value);
-  document.getElementById('heightVal').textContent = installHeight + ' cm';
-  document.getElementById('mHeight').innerHTML = installHeight + '<span class="metric-unit">cm</span>';
+els.heightSlider.addEventListener('input', function() {
+  installHeight = parseInt(this.value, 10);
+  els.heightVal.textContent = installHeight + ' cm';
+  els.heightBadge.textContent = installHeight + ' cm';
 });
 
-/* ══════════════════════════════════════════
-   Fetch from Supabase
-   ══════════════════════════════════════════ */
 async function fetchLatest() {
   try {
     const res = await fetch(
-      SUPABASE_URL + '/rest/v1/readings?select=*&order=created_at.desc&limit=30',
+      SUPABASE_URL + '/rest/v1/' + TABLE_NAME + '?select=*&order=created_at.desc&limit=30',
       {
         headers: {
           'apikey': SUPABASE_KEY,
@@ -471,96 +867,151 @@ async function fetchLatest() {
         }
       }
     );
+
+    if (!res.ok) throw new Error('Request failed');
+
     const data = await res.json();
-    if (!data || data.length === 0) return;
     hideBanner();
+    setConnection(true);
+
+    if (!data || data.length === 0) {
+      renderEmpty();
+      return;
+    }
+
     const latest = data[0];
     updateMetrics(latest);
-    updateChart(data.reverse());
+    updateChart(data.slice().reverse());
+    renderAlerts(data);
     checkAlarms(data);
   } catch(e) {
     showBanner();
+    setConnection(false);
   }
 }
 
-/* ══════════════════════════════════════════
-   Update UI
-   ══════════════════════════════════════════ */
+function renderEmpty() {
+  els.statusCard.className = 'card card-pad status-card';
+  els.statusBadge.innerHTML = '<span class="dot"></span> No Data';
+  els.statusTitle.textContent = 'Waiting';
+  els.statusCopy.textContent = 'No telemetry has been received yet. The dashboard will update automatically when readings arrive.';
+  els.logList.innerHTML = '<div class="empty-state">No alert events yet. Warning and critical events will appear here automatically.</div>';
+  els.logCount.textContent = '0 events';
+  els.historyCount.textContent = '0 readings';
+  els.chartWrap.classList.add('empty');
+}
+
 function updateMetrics(row) {
-  const wl   = parseFloat((row.water_level ?? 0).toFixed(1));
-  const dist = parseFloat((row.distance    ?? installHeight).toFixed(1));
-  const isAlarm = row.alarm === true;
+  const wl = getWaterLevel(row);
+  const dist = getDistance(row);
+  const leak = getLeakDetected(row);
+  const state = getState(row, wl, leak);
+  const time = getRowTime(row);
+  const online = Date.now() - time.getTime() <= OFFLINE_AFTER_MS;
+  const nodeId = row.node_id || row.device_id || 'node-01';
 
-  document.getElementById('mWater').innerHTML   = wl   + '<span class="metric-unit">cm</span>';
-  document.getElementById('mDist').innerHTML    = dist + '<span class="metric-unit">cm</span>';
-  document.getElementById('mWaterSub').textContent = isAlarm ? '⚠ rising' : 'stable';
-  document.getElementById('mDistSub').textContent  = 'ultrasonic reading';
-  document.getElementById('lastUpdate').textContent = 'updated ' + fmtTime(new Date(row.created_at));
+  els.statusCard.className = 'card card-pad status-card ' + state;
+  els.statusBadge.innerHTML = '<span class="dot"></span> ' + stateLabel(state);
+  els.statusTitle.textContent = stateLabel(state);
+  els.statusCopy.textContent = statusCopy(state);
 
-  setStatus(isAlarm ? 'alarm' : wl === 0 ? 'sleep' : 'normal');
+  els.nodeChip.textContent = 'Node: ' + nodeId;
+  els.lastUpdatedChip.textContent = 'Last update: ' + formatDateTime(time);
+  setConnection(online, online ? 'Live' : 'Stale data');
 
-  if (isAlarm) {
-    alarmCount++;
-    document.getElementById('mAlarms').innerHTML = alarmCount + '<span class="metric-unit">times</span>';
-    addLog(row.alarm ? 'red' : 'blue', row.alarm
-      ? '[ALARM] Water rising! ' + wl + ' cm'
-      : '[INFO] Water level: ' + wl + ' cm',
-      new Date(row.created_at));
-  }
+  els.summaryWater.innerHTML = formatLevel(wl) + '<span class="unit">cm</span>';
+  els.summaryWaterSub.textContent = waterLevelText(wl);
+  els.summaryLeak.textContent = leak ? 'Detected' : 'Clear';
+  els.summaryLeakSub.textContent = leak ? 'Water contact sensor is active' : 'No leak contact reported';
+  els.summaryUpdated.textContent = fmtTime(time);
+  els.summaryUpdatedSub.textContent = formatDate(time);
+  els.summaryDevice.textContent = online ? 'Online' : 'Stale';
+  els.summaryDeviceSub.textContent = online ? 'Recent telemetry received' : 'No fresh reading in 30 seconds';
+
+  els.mWater.innerHTML = formatLevel(wl) + '<span class="unit">cm</span>';
+  els.mWaterSub.textContent = waterLevelText(wl);
+  els.mLeak.textContent = leak ? 'Detected' : 'Clear';
+  els.mLeakSub.textContent = leak ? 'Leak sensor has triggered' : 'Leak sensor is clear';
+  els.mDist.innerHTML = formatLevel(dist) + '<span class="unit">cm</span>';
+  els.mDistSub.textContent = Number.isFinite(dist) ? 'Measured by ultrasonic sensor' : 'Distance not included in reading';
+  els.waterIcon.className = 'icon-box ' + state;
+  els.leakIcon.className = 'icon-box ' + (leak ? 'critical' : 'safe');
 }
 
 function updateChart(rows) {
+  const validRows = rows.filter(r => Number.isFinite(getWaterLevel(r)));
   chartLabels.length = 0;
-  chartData.length   = 0;
-  rows.forEach(r => {
-    chartLabels.push(fmtTime(new Date(r.created_at)));
-    chartData.push(parseFloat((r.water_level ?? 0).toFixed(1)));
+  chartData.length = 0;
+
+  validRows.forEach(r => {
+    chartLabels.push(fmtTime(getRowTime(r)));
+    chartData.push(roundLevel(getWaterLevel(r)));
   });
+
+  els.historyCount.textContent = validRows.length + ' readings';
+  els.chartWrap.classList.toggle('empty', validRows.length === 0);
+  chart.data.datasets[0].pointBackgroundColor = validRows.map(r => stateColor(getState(r, getWaterLevel(r), getLeakDetected(r))));
+  chart.data.datasets[0].pointBorderColor = validRows.map(r => stateColor(getState(r, getWaterLevel(r), getLeakDetected(r))));
   chart.update();
+}
+
+function renderAlerts(rows) {
+  const alerts = rows.filter(r => getState(r, getWaterLevel(r), getLeakDetected(r)) !== 'safe');
+
+  els.logCount.textContent = alerts.length + ' events';
+
+  if (!alerts.length) {
+    els.logList.innerHTML = '<div class="empty-state">No alert events yet. Warning and critical events will appear here automatically.</div>';
+    return;
+  }
+
+  els.logList.innerHTML = alerts.map(row => {
+    const wl = getWaterLevel(row);
+    const leak = getLeakDetected(row);
+    const state = getState(row, wl, leak);
+    const message = leak && state === 'critical'
+      ? 'Leak detected with critical water level'
+      : leak
+        ? 'Leak sensor triggered'
+        : state === 'critical'
+          ? 'Critical water level threshold exceeded'
+          : 'Water level warning threshold exceeded';
+
+    return `
+      <article class="alert-item ${state}">
+        <div class="alert-icon ${state}" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M10.3 4.3 2.8 17a2 2 0 0 0 1.7 3h15a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>
+        </div>
+        <div>
+          <div class="alert-top">
+            <div>
+              <p class="alert-title">${escapeHtml(stateLabel(state))}: ${escapeHtml(message)}</p>
+              <div class="alert-meta">
+                <span>Water level: ${escapeHtml(formatLevel(wl))} cm</span>
+                <span>Leak: ${leak ? 'Detected' : 'Clear'}</span>
+                <span>${escapeHtml(formatDateTime(getRowTime(row)))}</span>
+              </div>
+            </div>
+            <span class="badge ${state}">${escapeHtml(stateLabel(state))}</span>
+          </div>
+        </div>
+      </article>
+    `;
+  }).join('');
 }
 
 function checkAlarms(rows) {
   const todayStart = new Date();
-  todayStart.setHours(0,0,0,0);
-  const todayAlarms = rows.filter(r => r.alarm && new Date(r.created_at) > todayStart);
-  alarmCount = todayAlarms.length;
-  document.getElementById('mAlarms').innerHTML = alarmCount + '<span class="metric-unit">times</span>';
+  todayStart.setHours(0, 0, 0, 0);
+
+  const todayAlarms = rows.filter(r => {
+    const state = getState(r, getWaterLevel(r), getLeakDetected(r));
+    return state !== 'safe' && getRowTime(r) > todayStart;
+  });
+
+  els.mAlarms.innerHTML = todayAlarms.length + '<span class="unit">events</span>';
 }
 
-/* ══════════════════════════════════════════
-   Status pill
-   ══════════════════════════════════════════ */
-function setStatus(state) {
-  const pill = document.getElementById('statusPill');
-  const text = document.getElementById('statusText');
-  pill.className = 'status-pill ' + state;
-  text.textContent = state === 'alarm' ? 'Alarm' : state === 'sleep' ? 'Sleeping' : 'Normal';
-}
-
-/* ══════════════════════════════════════════
-   Log
-   ══════════════════════════════════════════ */
-function addLog(color, text, time) {
-  logCount++;
-  document.getElementById('logCount').textContent = logCount + ' events';
-
-  const colors = { red: '#ef4444', blue: '#3b82f6', green: '#22c55e', gray: '#4a4f5e' };
-  const item = document.createElement('div');
-  item.className = 'log-item';
-  item.innerHTML = `
-    <div class="log-bar" style="background:${colors[color]||colors.gray}"></div>
-    <div class="log-body">
-      <div class="log-text">${text}</div>
-      <div class="log-time">${fmtTime(time || new Date())}</div>
-    </div>`;
-  const list = document.getElementById('logList');
-  list.insertBefore(item, list.firstChild);
-  if (list.children.length > 50) list.removeChild(list.lastChild);
-}
-
-/* ══════════════════════════════════════════
-   Chart init
-   ══════════════════════════════════════════ */
 function initChart() {
   const ctx = document.getElementById('wlChart').getContext('2d');
   chart = new Chart(ctx, {
@@ -570,51 +1021,140 @@ function initChart() {
       datasets: [{
         label: 'Water level (cm)',
         data: chartData,
-        borderColor: '#3b82f6',
-        backgroundColor: 'rgba(59,130,246,0.06)',
-        borderWidth: 1.5,
-        pointRadius: 2.5,
-        pointBackgroundColor: '#3b82f6',
+        borderColor: '#1d6fb8',
+        backgroundColor: 'rgba(29,111,184,0.12)',
+        borderWidth: 2,
+        pointRadius: 3,
+        pointHoverRadius: 5,
         fill: true,
-        tension: 0.4
+        tension: 0.32
       }]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: context => 'Water level: ' + context.parsed.y + ' cm' } }
+      },
       scales: {
         x: {
-          ticks: { font: { size: 10, family: 'DM Mono' }, color: '#4a4f5e', maxTicksLimit: 8 },
-          grid: { color: 'rgba(255,255,255,0.04)' },
-          border: { color: 'rgba(255,255,255,0.07)' }
+          ticks: { color: '#9aa9bb', maxTicksLimit: 8, font: { family: 'Inter', size: 11, weight: '600' } },
+          grid: { color: 'rgba(148,163,184,0.14)' },
+          border: { color: 'rgba(148,163,184,0.22)' }
         },
         y: {
-          min: 0,
-          suggestedMax: 10,
-          ticks: { font: { size: 10, family: 'DM Mono' }, color: '#4a4f5e', callback: v => v + ' cm' },
-          grid: { color: 'rgba(255,255,255,0.04)' },
-          border: { color: 'rgba(255,255,255,0.07)' }
+          beginAtZero: true,
+          suggestedMax: 12,
+          ticks: { color: '#9aa9bb', callback: v => v + ' cm', font: { family: 'Inter', size: 11, weight: '600' } },
+          grid: { color: 'rgba(148,163,184,0.14)' },
+          border: { color: 'rgba(148,163,184,0.22)' }
         }
       }
     }
   });
 }
 
-/* ══════════════════════════════════════════
-   Helpers
-   ══════════════════════════════════════════ */
+function getWaterLevel(row) {
+  const direct = Number(row.water_level ?? row.water_level_cm ?? row.level_cm);
+  if (Number.isFinite(direct)) return direct;
+
+  const distance = getDistance(row);
+  if (Number.isFinite(distance)) return Math.max(installHeight - distance, 0);
+  return NaN;
+}
+
+function getDistance(row) {
+  const value = Number(row.distance ?? row.distance_cm ?? row.ultrasonic_distance_cm);
+  return Number.isFinite(value) ? value : NaN;
+}
+
+function getLeakDetected(row) {
+  const value = row.leak_detected ?? row.leak ?? row.water_leak ?? row.alarm;
+  return value === true || value === 1 || value === '1' || String(value).toLowerCase() === 'true';
+}
+
+function getState(row, waterLevel, leakDetected) {
+  const explicit = String(row.state ?? row.status ?? '').toLowerCase();
+  if (explicit.includes('critical')) return 'critical';
+  if (explicit.includes('warning') || explicit.includes('warn')) return 'warning';
+  if (explicit.includes('safe') || explicit.includes('normal')) return 'safe';
+
+  if (leakDetected && waterLevel >= 10) return 'critical';
+  if (waterLevel >= 10) return 'critical';
+  if (leakDetected || waterLevel >= 5 || row.alarm === true) return 'warning';
+  return 'safe';
+}
+
+function getRowTime(row) {
+  const value = row.created_at ?? row.ts ?? row.timestamp ?? row.time;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
+}
+
+function stateLabel(state) {
+  return { safe: 'Safe', warning: 'Warning', critical: 'Critical' }[state] || 'Safe';
+}
+
+function stateColor(state) {
+  return { safe: '#16825a', warning: '#ad751b', critical: '#c43c34' }[state] || '#8997a8';
+}
+
+function statusCopy(state) {
+  if (state === 'critical') return 'Critical flood risk is active. Immediate attention is recommended.';
+  if (state === 'warning') return 'A warning condition is active. Check the sensor area and continue monitoring.';
+  return 'No leak is detected and the water level is within the safe range.';
+}
+
+function waterLevelText(value) {
+  if (!Number.isFinite(value)) return 'Sensor reading unavailable';
+  if (value >= 10) return 'Critical flood threshold exceeded';
+  if (value >= 5) return 'Above warning threshold';
+  return 'Within safe range';
+}
+
+function formatLevel(value) {
+  return Number.isFinite(value) ? roundLevel(value).toFixed(1) : '--';
+}
+
+function roundLevel(value) {
+  return Math.round(Number(value) * 10) / 10;
+}
+
 function fmtTime(d) {
   return d.toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
 
-function updateUptime() {
-  const min = Math.floor((Date.now() - startTime) / 60000);
-  document.getElementById('footerUptime').textContent = 'uptime: ' + min + ' min';
+function formatDate(d) {
+  return d.toLocaleDateString('en', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-function showBanner() { document.getElementById('banner').classList.add('show'); }
-function hideBanner() { document.getElementById('banner').classList.remove('show'); }
+function formatDateTime(d) {
+  return formatDate(d) + ', ' + fmtTime(d);
+}
+
+function updateUptime() {
+  const min = Math.floor((Date.now() - startTime) / 60000);
+  els.footerUptime.textContent = 'uptime: ' + min + ' min';
+}
+
+function setConnection(ok, text) {
+  els.connectionChip.innerHTML = '<span class="dot"></span> ' + (text || (ok ? 'Connected' : 'Offline'));
+  els.connectionChip.style.color = ok ? 'var(--safe)' : 'var(--critical)';
+}
+
+function showBanner() { els.banner.classList.add('show'); }
+function hideBanner() { els.banner.classList.remove('show'); }
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
 </script>
 </body>
 </html>
