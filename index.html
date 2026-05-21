@@ -1,2015 +1,1239 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Smart Flood Sentinel Dashboard</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <style>
-    :root {
-      --page: #0a0f17;
-      --surface: #111827;
-      --surface-soft: #162131;
-      --surface-raised: #1a2636;
-      --border: rgba(148, 163, 184, 0.18);
-      --border-strong: rgba(148, 163, 184, 0.32);
-      --text: #eef4fb;
-      --muted: #9aa9bb;
-      --faint: #748295;
-      --blue: #4da3ff;
-      --blue-soft: rgba(77, 163, 255, 0.14);
-      --safe: #42d392;
-      --safe-soft: rgba(66, 211, 146, 0.14);
-      --warning: #f5c451;
-      --warning-soft: rgba(245, 196, 81, 0.16);
-      --critical: #ff6b63;
-      --critical-soft: rgba(255, 107, 99, 0.16);
-      --shadow: 0 22px 55px rgba(0, 0, 0, 0.32);
-      --radius: 8px;
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      min-height: 100vh;
-      background:
-        radial-gradient(circle at top left, rgba(77, 163, 255, 0.18), transparent 360px),
-        linear-gradient(180deg, rgba(22, 33, 49, 0.92), rgba(10, 15, 23, 0) 380px),
-        var(--page);
-      color: var(--text);
-      font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      line-height: 1.5;
-    }
-
-    @keyframes pageIn {
-      from {
-        opacity: 0;
-        transform: translateY(10px);
-      }
-
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    @keyframes softPulse {
-
-      0%,
-      100% {
-        box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 12%, transparent);
-      }
-
-      50% {
-        box-shadow: 0 0 0 7px color-mix(in srgb, currentColor 5%, transparent);
-      }
-    }
-
-    @keyframes alertIn {
-      from {
-        opacity: 0;
-        transform: translateY(6px);
-      }
-
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .shell {
-      width: min(1280px, calc(100% - 24px));
-      margin: 0 auto;
-      padding: 14px 0 14px;
-      animation: pageIn 420ms ease-out both;
-    }
-
-    .topbar,
-    .brand,
-    .top-actions,
-    .section-header,
-    .section-title,
-    .alert-top,
-    .metric-row,
-    .footer {
-      display: flex;
-    }
-
-    .topbar {
-      align-items: center;
-      justify-content: space-between;
-      gap: 14px;
-      margin-bottom: 12px;
-    }
-
-    .brand {
-      align-items: center;
-      gap: 12px;
-      min-width: 0;
-    }
-
-    .brand-mark,
-    .icon-box,
-    .alert-icon {
-      display: grid;
-      place-items: center;
-      flex: 0 0 auto;
-      border-radius: var(--radius);
-    }
-
-    .brand-mark {
-      width: 38px;
-      height: 38px;
-      background: #0f527d;
-      color: #fff;
-      box-shadow: 0 10px 24px rgba(15, 82, 125, 0.22);
-    }
-
-    svg {
-      width: 18px;
-      height: 18px;
-      stroke: currentColor;
-      fill: none;
-      stroke-width: 2;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-    }
-
-    .eyebrow {
-      margin: 0;
-      color: var(--muted);
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-
-    h1 {
-      margin: 1px 0 0;
-      font-size: clamp(22px, 2.4vw, 30px);
-      line-height: 1.05;
-      letter-spacing: 0;
-    }
-
-    .top-actions {
-      align-items: center;
-      justify-content: flex-end;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-
-    .chip,
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 7px;
-      min-height: 28px;
-      padding: 5px 9px;
-      border: 1px solid var(--border);
-      border-radius: 999px;
-      background: rgba(17, 24, 39, 0.78);
-      color: var(--muted);
-      font-size: 11px;
-      font-weight: 800;
-      white-space: nowrap;
-    }
-
-    .dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 99px;
-      background: currentColor;
-      box-shadow: 0 0 0 4px color-mix(in srgb, currentColor 14%, transparent);
-      animation: softPulse 2.4s ease-in-out infinite;
-    }
-
-    .banner {
-      display: none;
-      margin-bottom: 10px;
-      padding: 10px 12px;
-      border: 1px solid rgba(196, 60, 52, 0.28);
-      border-radius: var(--radius);
-      background: var(--critical-soft);
-      color: var(--critical);
-      font-weight: 800;
-    }
-
-    .banner.show {
-      display: block;
-    }
-
-    .layout {
-      display: grid;
-      grid-template-columns: minmax(0, 1.05fr) minmax(420px, 0.95fr);
-      gap: 12px;
-      align-items: start;
-    }
-
-    aside {
-      display: grid;
-      grid-template-rows: auto minmax(0, 1fr);
-      gap: 12px;
-      max-height: calc(100vh - 92px);
-      min-height: 0;
-    }
-
-
-    .card {
-
-      background: rgba(17, 24, 39, 0.92);
-
-      border: 1px solid var(--border);
-
-      border-radius: var(--radius);
-
-      box-shadow: var(--shadow);
-
-      transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
-
-    }
-
-    .layout>div>.card,
-
-    aside>.card {
-
-      animation: pageIn 420ms ease-out both;
-
-    }
-
-    .layout>div>.card:nth-child(1) {
-      animation-delay: 30ms;
-    }
-
-    .layout>div>.card:nth-child(2) {
-      animation-delay: 70ms;
-    }
-
-    .layout>div>.card:nth-child(3) {
-      animation-delay: 110ms;
-    }
-
-    aside>.card:nth-child(1) {
-      animation-delay: 80ms;
-    }
-
-    aside>.card:nth-child(2) {
-      animation-delay: 120ms;
-    }
-
-    .card:hover {
-
-      transform: translateY(-2px);
-
-      border-color: var(--border-strong);
-
-      box-shadow: 0 24px 58px rgba(0, 0, 0, 0.38);
-
-    }
-
-    .card-pad {
-      padding: 12px;
-    }
-
-    .status-card {
-
-      position: relative;
-
-      min-height: 210px;
-
-      overflow: hidden;
-
-    }
-
-    .status-card.safe {
-
-      background: linear-gradient(145deg, rgba(17, 24, 39, 0.94), rgba(66, 211, 146, 0.06));
-
-    }
-
-    .status-card.warning {
-
-      background: linear-gradient(145deg, rgba(17, 24, 39, 0.94), rgba(245, 196, 81, 0.08));
-
-    }
-
-    .status-card.critical {
-
-      background: linear-gradient(145deg, rgba(17, 24, 39, 0.94), rgba(255, 107, 99, 0.1));
-
-    }
-
-    .status-card::before {
-
-      content: "";
-
-      position: absolute;
-
-      inset: 0 0 auto;
-
-      height: 4px;
-
-      background: var(--faint);
-
-    }
-
-    .status-card.safe::before {
-      background: var(--safe);
-    }
-
-    .status-card.warning::before {
-      background: var(--warning);
-    }
-
-    .status-card.critical::before {
-      background: var(--critical);
-    }
-
-    .status-head {
-
-      display: flex;
-
-      justify-content: space-between;
-
-      gap: 12px;
-
-      margin-bottom: 12px;
-
-    }
-
-    .status-title {
-
-      margin: 6px 0 3px;
-
-      font-size: clamp(32px, 4.8vw, 46px);
-
-      line-height: 0.95;
-
-      letter-spacing: 0;
-
-    }
-
-    .status-copy {
-
-      max-width: 580px;
-
-      margin: 0;
-
-      color: var(--muted);
-
-      font-size: 13px;
-
-    }
-
-    .status-badge {
-
-      display: inline-flex;
-
-      align-items: center;
-
-      gap: 8px;
-
-      padding: 6px 10px;
-
-      border: 1px solid var(--border);
-
-      border-radius: 999px;
-
-      background: var(--surface-soft);
-
-      color: var(--muted);
-
-      font-size: 11px;
-
-      font-weight: 800;
-
-      letter-spacing: 0.04em;
-
-      text-transform: uppercase;
-
-    }
-
-    .safe .status-badge,
-
-    .badge.safe {
-      background: var(--safe-soft);
-      color: var(--safe);
-      border-color: rgba(22, 130, 90, 0.22);
-    }
-
-    .warning .status-badge,
-
-    .badge.warning {
-      background: var(--warning-soft);
-      color: var(--warning);
-      border-color: rgba(173, 117, 27, 0.25);
-    }
-
-    .critical .status-badge,
-
-    .badge.critical {
-      background: var(--critical-soft);
-      color: var(--critical);
-      border-color: rgba(196, 60, 52, 0.24);
-    }
-
-    .summary-grid,
-
-    .telemetry-grid {
-
-      display: grid;
-
-      gap: 8px;
-
-    }
-
-    .summary-grid {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
-
-    .telemetry-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .summary-item,
-
-    .metric-card {
-
-      min-width: 0;
-
-      padding: 10px;
-
-      border: 1px solid var(--border);
-
-      border-radius: var(--radius);
-
-      background: var(--surface-soft);
-
-      transition: transform 160ms ease, background-color 160ms ease, border-color 160ms ease;
-
-    }
-
-    .summary-item:hover,
-
-    .metric-card:hover {
-
-      transform: translateY(-1px);
-
-      border-color: var(--border-strong);
-
-    }
-
-    .metric-card {
-      background: var(--surface-raised);
-    }
-
-    .label {
-
-      margin: 0 0 6px;
-
-      color: var(--muted);
-
-      font-size: 10px;
-
-      font-weight: 800;
-
-      letter-spacing: 0.04em;
-
-      text-transform: uppercase;
-
-    }
-
-    .value {
-
-      margin: 0;
-
-      color: var(--text);
-
-      font-size: 20px;
-
-      font-weight: 800;
-
-      line-height: 1.05;
-
-      overflow-wrap: anywhere;
-
-    }
-
-    .unit {
-
-      margin-left: 3px;
-
-      color: var(--muted);
-
-      font-size: 12px;
-
-      font-weight: 800;
-
-    }
-
-    .subtext {
-
-      margin: 5px 0 0;
-
-      color: var(--faint);
-
-      font-size: 11px;
-
-      font-weight: 700;
-
-    }
-
-    .section {
-
-      margin-top: 12px;
-
-    }
-
-    aside .section {
-
-      margin-top: 0;
-
-      min-height: 0;
-
-    }
-
-    aside .section.card {
-
-      display: flex;
-
-      flex-direction: column;
-
-    }
-
-    .section-header {
-
-      align-items: center;
-
-      justify-content: space-between;
-
-      gap: 10px;
-
-      margin-bottom: 9px;
-
-    }
-
-    .section-title {
-
-      align-items: center;
-
-      gap: 8px;
-
-      min-width: 0;
-
-    }
-
-    .icon-box,
-
-    .alert-icon {
-
-      width: 30px;
-
-      height: 30px;
-
-      background: var(--blue-soft);
-
-      color: var(--blue);
-
-      transition: transform 180ms ease, box-shadow 180ms ease;
-
-    }
-
-    .metric-card:hover .icon-box,
-
-    .section-header:hover .icon-box {
-
-      transform: scale(1.03);
-
-    }
-
-    .icon-box.safe,
-
-    .alert-icon.safe {
-      background: var(--safe-soft);
-      color: var(--safe);
-    }
-
-    .icon-box.warning,
-
-    .alert-icon.warning {
-      background: var(--warning-soft);
-      color: var(--warning);
-    }
-
-    .icon-box.critical,
-
-    .alert-icon.critical {
-      background: var(--critical-soft);
-      color: var(--critical);
-    }
-
-    h2 {
-
-      margin: 0;
-
-      font-size: 15px;
-
-      letter-spacing: 0;
-
-    }
-
-    .section-note {
-
-      margin: 2px 0 0;
-
-      color: var(--muted);
-
-      font-size: 11px;
-
-    }
-
-    .metric-row {
-
-      align-items: flex-start;
-
-      justify-content: space-between;
-
-      gap: 10px;
-
-    }
-
-    .chart-wrap {
-
-      position: relative;
-
-      height: 180px;
-
-      animation: alertIn 360ms ease-out both;
-
-    }
-
-    .chart-empty {
-
-      display: none;
-
-      position: absolute;
-
-      inset: 0;
-
-      place-items: center;
-
-      padding: 12px;
-
-      border: 1px dashed var(--border-strong);
-
-      border-radius: var(--radius);
-
-      background: rgba(17, 24, 39, 0.86);
-
-      color: var(--muted);
-
-      text-align: center;
-
-      font-weight: 800;
-
-    }
-
-    .chart-wrap.empty canvas {
-      opacity: 0;
-    }
-
-    .chart-wrap.empty .chart-empty {
-      display: grid;
-    }
-
-    .control-row {
-
-      display: grid;
-
-      grid-template-columns: 1fr auto;
-
-      gap: 10px;
-
-      align-items: center;
-
-    }
-
-    input[type=range] {
-
-      width: 100%;
-
-      accent-color: var(--blue);
-
-    }
-
-    .alerts-list {
-
-      display: grid;
-
-      gap: 8px;
-
-      max-height: none;
-
-      min-height: 0;
-
-      overflow: auto;
-
-      padding-right: 4px;
-
-    }
-
-    .alerts-list::-webkit-scrollbar {
-      width: 8px;
-    }
-
-    .alerts-list::-webkit-scrollbar-track {
-      background: transparent;
-    }
-
-    .alerts-list::-webkit-scrollbar-thumb {
-      background: var(--border-strong);
-      border-radius: 999px;
-    }
-
-    .alert-item {
-
-      display: grid;
-
-      grid-template-columns: 30px minmax(0, 1fr);
-
-      gap: 8px;
-
-      padding: 9px;
-
-      border: 1px solid var(--border);
-
-      border-left: 5px solid var(--warning);
-
-      border-radius: var(--radius);
-
-      background: var(--surface-raised);
-
-      animation: alertIn 240ms ease-out both;
-
-      transition: transform 160ms ease, border-color 160ms ease, background-color 160ms ease;
-
-    }
-
-    .alert-item:hover {
-
-      transform: translateX(2px);
-
-      border-color: var(--border-strong);
-
-    }
-
-    .alert-item.critical {
-
-      border-left-color: var(--critical);
-
-      background: linear-gradient(90deg, rgba(255, 107, 99, 0.16), var(--surface-raised) 62%);
-
-    }
-
-    .alert-item.safe {
-      border-left-color: var(--safe);
-    }
-
-    .alert-top {
-
-      align-items: flex-start;
-
-      justify-content: space-between;
-
-      gap: 8px;
-
-    }
-
-    .alert-title {
-
-      margin: 0;
-
-      font-size: 13px;
-
-      font-weight: 800;
-
-    }
-
-    .alert-meta {
-
-      display: flex;
-
-      flex-wrap: wrap;
-
-      gap: 6px;
-
-      margin-top: 5px;
-
-      color: var(--muted);
-
-      font-size: 11px;
-
-      font-weight: 700;
-
-    }
-
-    .empty-state,
-
-    .loading-state {
-
-      padding: 18px 12px;
-
-      border: 1px dashed var(--border-strong);
-
-      border-radius: var(--radius);
-
-      background: var(--surface-soft);
-
-      color: var(--muted);
-
-      text-align: center;
-
-      font-weight: 800;
-
-    }
-
-    .footer {
-
-      justify-content: space-between;
-
-      gap: 14px;
-
-      flex-wrap: wrap;
-
-      margin-top: 8px;
-
-      padding: 8px 2px 0;
-
-      color: var(--muted);
-
-      font-size: 11px;
-
-      font-weight: 800;
-
-    }
-
-    .skeleton {
-
-      position: relative;
-
-      display: inline-block;
-
-      min-width: 82px;
-
-      color: transparent !important;
-
-      overflow: hidden;
-
-      border-radius: 4px;
-
-      background: #263346;
-
-    }
-
-    .skeleton::after {
-
-      content: "";
-
-      position: absolute;
-
-      inset: 0;
-
-      transform: translateX(-100%);
-
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.68), transparent);
-
-      animation: shimmer 1.2s infinite;
-
-    }
-
-    @keyframes shimmer {
-
-      100% {
-        transform: translateX(100%);
-      }
-
-    }
-
-    @media (max-width: 940px) {
-
-      .layout {
-        grid-template-columns: 1fr;
-      }
-
-      .summary-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-
-      aside {
-
-        max-height: none;
-
-      }
-
-      .alerts-list {
-
-        max-height: 360px;
-
-      }
-
-    }
-
-    @media (max-width: 720px) {
-
-      .shell {
-
-        width: min(100% - 20px, 1180px);
-
-        padding-top: 14px;
-
-      }
-
-      .topbar,
-
-      .status-head {
-
-        align-items: flex-start;
-
-        flex-direction: column;
-
-      }
-
-      .top-actions {
-
-        justify-content: flex-start;
-
-        width: 100%;
-
-      }
-
-      .summary-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .card-pad {
-        padding: 14px;
-      }
-
-      .chart-wrap {
-        height: 240px;
-      }
-
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-
-      *,
-
-      *::before,
-
-      *::after {
-
-        animation-duration: 0.01ms !important;
-
-        animation-iteration-count: 1 !important;
-
-        scroll-behavior: auto !important;
-
-        transition-duration: 0.01ms !important;
-
-      }
-
-    }
-
-
-    .notify-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 32px;
-      padding: 7px 12px;
-      border: 1px solid var(--border-strong);
-      border-radius: 999px;
-      background: var(--blue-soft);
-      color: var(--text);
-      font-family: inherit;
-      font-size: 11px;
-      font-weight: 800;
-      cursor: pointer;
-      white-space: nowrap;
-      transition: transform 160ms ease, border-color 160ms ease, background-color 160ms ease;
-    }
-
-    .notify-btn:hover {
-      transform: translateY(-1px);
-      border-color: rgba(77, 163, 255, 0.55);
-      background: rgba(77, 163, 255, 0.22);
-    }
-
-    .notify-btn:disabled {
-      cursor: not-allowed;
-      opacity: 0.65;
-      transform: none;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Flood Sentinel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --page:           #080d13;
+  --surface:        #0e1620;
+  --surface-raised: #13202e;
+  --surface-high:   #172535;
+  --border:         rgba(120,160,200,0.13);
+  --border-mid:     rgba(120,160,200,0.22);
+  --border-strong:  rgba(120,160,200,0.34);
+  --text:           #ddeaf7;
+  --muted:          #7a9ab8;
+  --faint:          #4a6880;
+
+  --blue:           #4fa3e8;
+  --blue-dim:       rgba(79,163,232,0.13);
+
+  --safe:           #34d17a;
+  --safe-dim:       rgba(52,209,122,0.12);
+  --safe-border:    rgba(52,209,122,0.25);
+
+  --warn:           #f5b731;
+  --warn-dim:       rgba(245,183,49,0.13);
+  --warn-border:    rgba(245,183,49,0.28);
+
+  --crit:           #f05252;
+  --crit-dim:       rgba(240,82,82,0.13);
+  --crit-border:    rgba(240,82,82,0.26);
+
+  --error:          #e0752a;
+  --error-dim:      rgba(224,117,42,0.13);
+  --error-border:   rgba(224,117,42,0.26);
+
+  --r:              6px;
+  --shadow:         0 16px 48px rgba(0,0,0,0.38);
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+
+body{
+  background: var(--page);
+  color: var(--text);
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+/* Subtle grid texture */
+body::before{
+  content:"";
+  position:fixed;inset:0;
+  background-image:
+    linear-gradient(rgba(79,163,232,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(79,163,232,0.03) 1px, transparent 1px);
+  background-size: 32px 32px;
+  pointer-events:none;
+  z-index:0;
+}
+
+.shell{
+  position:relative;z-index:1;
+  width: min(1320px, 100% - 32px);
+  margin: 0 auto;
+  padding: 18px 0 24px;
+}
+
+/* ── Topbar ── */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:14px;margin-bottom:14px;
+  flex-wrap:wrap;
+}
+
+.brand{display:flex;align-items:center;gap:12px}
+
+.brand-icon{
+  width:40px;height:40px;border-radius:var(--r);
+  background: linear-gradient(135deg,#0d4f8a,#1a6fba);
+  display:grid;place-items:center;
+  box-shadow:0 8px 24px rgba(26,111,186,0.28);
+  flex:0 0 auto;
+}
+.brand-icon svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+.brand-text p{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:1px}
+.brand-text h1{font-size:clamp(18px,2vw,24px);font-weight:700;letter-spacing:-.02em;line-height:1}
+
+.chips{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+
+.chip{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:5px 10px;
+  border:1px solid var(--border-mid);border-radius:999px;
+  background:rgba(14,22,32,.85);
+  font-family:"IBM Plex Mono",monospace;
+  font-size:10px;font-weight:500;
+  color:var(--muted);white-space:nowrap;
+}
+
+.dot{
+  width:7px;height:7px;border-radius:50%;
+  background:currentColor;
+  box-shadow:0 0 0 3px color-mix(in srgb,currentColor 18%,transparent);
+}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 3px color-mix(in srgb,currentColor 18%,transparent)}50%{box-shadow:0 0 0 6px color-mix(in srgb,currentColor 6%,transparent)}}
+.dot{animation:pulse 2.4s ease-in-out infinite}
+
+/* ── Banner ── */
+.banner{
+  display:none;
+  margin-bottom:12px;padding:10px 14px;
+  border:1px solid var(--crit-border);border-radius:var(--r);
+  background:var(--crit-dim);
+  color:var(--crit);font-size:13px;font-weight:600;
+}
+.banner.show{display:block}
+
+/* sensor error banner */
+.sensor-banner{
+  display:none;
+  margin-bottom:12px;padding:12px 14px;
+  border:1px solid var(--error-border);border-radius:var(--r);
+  background:var(--error-dim);
+  color:var(--error);font-size:13px;font-weight:600;
+  line-height:1.6;
+}
+.sensor-banner.show{display:block}
+
+/* ── Layout ── */
+.layout{
+  display:grid;
+  grid-template-columns: minmax(0,1.1fr) minmax(360px,.9fr);
+  gap:12px;align-items:start;
+}
+
+aside{display:grid;gap:12px}
+
+/* ── Card ── */
+.card{
+  background:rgba(14,22,32,.95);
+  border:1px solid var(--border);border-radius:var(--r);
+  box-shadow:var(--shadow);
+}
+.pad{padding:14px}
+
+/* status top bar */
+.card.safe   {border-top:3px solid var(--safe)}
+.card.warning{border-top:3px solid var(--warn)}
+.card.critical{border-top:3px solid var(--crit)}
+.card.sensor_error{border-top:3px solid var(--error)}
+
+/* ── Status card ── */
+.status-card{position:relative;overflow:hidden}
+.status-card.safe   {background:linear-gradient(145deg,rgba(14,22,32,.97),rgba(52,209,122,.05))}
+.status-card.warning{background:linear-gradient(145deg,rgba(14,22,32,.97),rgba(245,183,49,.06))}
+.status-card.critical{background:linear-gradient(145deg,rgba(14,22,32,.97),rgba(240,82,82,.07))}
+.status-card.sensor_error{background:linear-gradient(145deg,rgba(14,22,32,.97),rgba(224,117,42,.07))}
+
+.status-head{display:flex;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+
+.state-badge{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:5px 10px;border-radius:999px;
+  border:1px solid var(--border-mid);
+  background:var(--surface-raised);
+  font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--muted);
+}
+.state-badge.safe   {background:var(--safe-dim);   color:var(--safe);   border-color:var(--safe-border)}
+.state-badge.warning{background:var(--warn-dim);   color:var(--warn);   border-color:var(--warn-border)}
+.state-badge.critical{background:var(--crit-dim);  color:var(--crit);   border-color:var(--crit-border)}
+.state-badge.sensor_error{background:var(--error-dim);color:var(--error);border-color:var(--error-border)}
+
+.status-title{
+  font-size:clamp(28px,4vw,42px);font-weight:700;
+  line-height:1;letter-spacing:-.03em;
+  margin:4px 0 6px;
+}
+.safe    .status-title{color:var(--safe)}
+.warning .status-title{color:var(--warn)}
+.critical .status-title{color:var(--crit)}
+.sensor_error .status-title{color:var(--error)}
+
+.status-copy{color:var(--muted);font-size:13px;max-width:520px}
+
+/* ── Summary grid ── */
+.summary-grid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:8px;margin-top:14px;
+}
+
+.summary-item{
+  padding:10px;
+  border:1px solid var(--border);border-radius:var(--r);
+  background:var(--surface-raised);
+}
+.summary-item .lbl{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.summary-item .val{font-family:"IBM Plex Mono",monospace;font-size:18px;font-weight:600;line-height:1}
+.summary-item .sub{font-size:10px;color:var(--faint);margin-top:4px}
+
+/* ── Section header ── */
+.sec-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.sec-title-row{display:flex;align-items:center;gap:9px}
+.icon-box{
+  width:30px;height:30px;border-radius:var(--r);
+  display:grid;place-items:center;
+  background:var(--blue-dim);color:var(--blue);flex:0 0 auto;
+}
+.icon-box svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.icon-box.warn{background:var(--warn-dim);color:var(--warn)}
+.icon-box.crit{background:var(--crit-dim);color:var(--crit)}
+.icon-box.safe{background:var(--safe-dim);color:var(--safe)}
+.icon-box.err {background:var(--error-dim);color:var(--error)}
+
+.sec-head h2{font-size:14px;font-weight:700;letter-spacing:-.01em}
+.sec-head p {font-size:11px;color:var(--muted);margin-top:1px}
+
+.badge{
+  display:inline-flex;align-items:center;
+  padding:3px 8px;border-radius:999px;
+  border:1px solid var(--border-mid);
+  background:var(--surface-raised);
+  font-family:"IBM Plex Mono",monospace;
+  font-size:10px;font-weight:600;color:var(--muted);
+  white-space:nowrap;
+}
+
+/* ── Chart ── */
+.chart-wrap{position:relative;height:190px}
+.chart-empty{
+  display:none;position:absolute;inset:0;
+  place-items:center;
+  border:1px dashed var(--border-mid);border-radius:var(--r);
+  background:rgba(14,22,32,.8);
+  color:var(--muted);font-size:12px;font-weight:600;text-align:center;padding:16px;
+}
+.chart-wrap.empty canvas{opacity:0}
+.chart-wrap.empty .chart-empty{display:grid}
+
+/* ── Telemetry grid ── */
+.telem-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+
+.metric-card{
+  padding:10px;
+  border:1px solid var(--border);border-radius:var(--r);
+  background:var(--surface-high);
+}
+.metric-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.metric-lbl{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.metric-val{font-family:"IBM Plex Mono",monospace;font-size:20px;font-weight:600;line-height:1}
+.metric-val .unit{font-size:11px;color:var(--muted);margin-left:2px}
+.metric-sub{font-size:10px;color:var(--faint);margin-top:5px}
+
+/* ── Config panel ── */
+.config-grid{display:grid;gap:12px}
+
+.config-row{
+  display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;
+}
+.config-lbl{font-size:11px;font-weight:600;color:var(--muted);margin-bottom:5px}
+.config-val{
+  font-family:"IBM Plex Mono",monospace;font-size:13px;font-weight:600;
+  color:var(--text);white-space:nowrap;min-width:52px;text-align:right;
+}
+
+input[type=range]{
+  width:100%;height:4px;
+  -webkit-appearance:none;appearance:none;
+  background:var(--border-strong);border-radius:2px;outline:none;cursor:pointer;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;
+  width:16px;height:16px;border-radius:50%;
+  background:var(--blue);border:2px solid var(--page);
+  box-shadow:0 0 0 2px rgba(79,163,232,.3);
+  cursor:pointer;transition:box-shadow .15s;
+}
+input[type=range]::-webkit-slider-thumb:hover{box-shadow:0 0 0 4px rgba(79,163,232,.22)}
+input[type=range].warn-slider::-webkit-slider-thumb{background:var(--warn);box-shadow:0 0 0 2px rgba(245,183,49,.3)}
+input[type=range].crit-slider::-webkit-slider-thumb{background:var(--crit);box-shadow:0 0 0 2px rgba(240,82,82,.3)}
+
+.save-btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:7px 14px;
+  border:1px solid var(--blue);border-radius:var(--r);
+  background:rgba(79,163,232,.12);color:var(--blue);
+  font-size:12px;font-weight:700;cursor:pointer;
+  transition:background .15s,transform .1s;
+}
+.save-btn:hover{background:rgba(79,163,232,.2)}
+.save-btn:active{transform:scale(.97)}
+.save-btn svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+.save-status{font-size:11px;font-weight:600;margin-left:6px}
+.save-status.ok  {color:var(--safe)}
+.save-status.fail{color:var(--crit)}
+
+.height-display{
+  padding:9px 12px;
+  border:1px solid var(--border);border-radius:var(--r);
+  background:var(--surface);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.height-display span{font-size:11px;color:var(--muted)}
+.height-display strong{font-family:"IBM Plex Mono",monospace;font-size:14px;color:var(--text)}
+
+/* ── Alerts list ── */
+.alerts-list{display:grid;gap:8px;max-height:420px;overflow-y:auto;padding-right:2px}
+.alerts-list::-webkit-scrollbar{width:6px}
+.alerts-list::-webkit-scrollbar-track{background:transparent}
+.alerts-list::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:3px}
+
+.alert-item{
+  display:grid;grid-template-columns:28px 1fr;gap:8px;
+  padding:9px;
+  border:1px solid var(--border);
+  border-left:4px solid var(--warn);
+  border-radius:var(--r);
+  background:var(--surface-raised);
+}
+.alert-item.critical     {border-left-color:var(--crit);background:linear-gradient(90deg,rgba(240,82,82,.1),var(--surface-raised) 55%)}
+.alert-item.sensor_error {border-left-color:var(--error);background:linear-gradient(90deg,rgba(224,117,42,.1),var(--surface-raised) 55%)}
+.alert-item.safe         {border-left-color:var(--safe)}
+
+.alert-icon{
+  width:28px;height:28px;border-radius:var(--r);
+  display:grid;place-items:center;flex:0 0 auto;
+  background:var(--warn-dim);color:var(--warn);
+}
+.alert-icon svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.alert-item.critical .alert-icon     {background:var(--crit-dim);color:var(--crit)}
+.alert-item.sensor_error .alert-icon {background:var(--error-dim);color:var(--error)}
+.alert-item.safe .alert-icon         {background:var(--safe-dim);color:var(--safe)}
+
+.alert-title{font-size:12px;font-weight:700;margin-bottom:4px}
+.alert-meta{display:flex;flex-wrap:wrap;gap:6px;font-size:10px;color:var(--muted);font-family:"IBM Plex Mono",monospace}
+.alert-badge{display:inline-flex;align-items:center;padding:1px 6px;border-radius:3px;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.alert-badge.rising{background:rgba(245,183,49,.15);color:var(--warn)}
+
+.empty-state,.loading-state{
+  padding:20px 14px;text-align:center;
+  border:1px dashed var(--border-mid);border-radius:var(--r);
+  background:var(--surface);
+  color:var(--muted);font-size:12px;font-weight:600;
+}
+
+/* ── Footer ── */
+.footer{
+  display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;
+  margin-top:10px;padding:8px 2px 0;
+  border-top:1px solid var(--border);
+  font-size:10px;font-family:"IBM Plex Mono",monospace;
+  color:var(--faint);
+}
+
+/* ── Skeleton ── */
+.skeleton{
+  display:inline-block;min-width:60px;
+  border-radius:3px;background:#1a2e40;
+  color:transparent !important;position:relative;overflow:hidden;
+}
+.skeleton::after{
+  content:"";position:absolute;inset:0;transform:translateX(-100%);
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent);
+  animation:shimmer 1.3s infinite;
+}
+@keyframes shimmer{100%{transform:translateX(100%)}}
+
+
+/* ── Firebase notification button ── */
+.notify-btn{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:6px 11px;
+  border:1px solid var(--blue);
+  border-radius:999px;
+  background:rgba(79,163,232,.12);
+  color:var(--blue);
+  font-family:"IBM Plex Mono",monospace;
+  font-size:10px;
+  font-weight:700;
+  cursor:pointer;
+  white-space:nowrap;
+  transition:background .15s, transform .1s, border-color .15s;
+}
+.notify-btn:hover{background:rgba(79,163,232,.2);border-color:rgba(79,163,232,.75)}
+.notify-btn:active{transform:scale(.97)}
+.notify-btn.enabled{
+  border-color:var(--safe-border);
+  background:var(--safe-dim);
+  color:var(--safe);
+}
+.notify-btn.fail{
+  border-color:var(--crit-border);
+  background:var(--crit-dim);
+  color:var(--crit);
+}
+
+/* ── Responsive ── */
+@media(max-width:960px){
+  .layout{grid-template-columns:1fr}
+  .summary-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:640px){
+  .summary-grid{grid-template-columns:1fr}
+  .telem-grid{grid-template-columns:1fr}
+  .config-row{grid-template-columns:1fr}
+  .config-val{text-align:left}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
 </head>
-
 <body>
-  <main class="shell">
-    <header class="topbar">
-      <div class="brand">
-        <div class="brand-mark" aria-hidden="true">
-          <svg viewBox="0 0 24 24">
-            <path d="M12 3c3.5 4 6 7.2 6 10.4A6 6 0 0 1 6 13.4C6 10.2 8.5 7 12 3Z"></path>
-            <path d="M8.8 14.4c.6 1.7 1.9 2.6 3.7 2.6"></path>
-          </svg>
-        </div>
-        <div>
-          <p class="eyebrow">Residential IoT Security</p>
-          <h1>Smart Flood Sentinel</h1>
-        </div>
-      </div>
-      <div class="top-actions">
-        <span class="chip" id="nodeChip">Node: live feed</span>
-        <span class="chip" id="connectionChip"><span class="dot"></span> Connecting</span>
-        <span class="chip" id="lastUpdatedChip">Last update: pending</span>
-        <button class="notify-btn" id="notifyBtn" onclick="enableFirebaseNotifications()">Enable Phone
-          Notifications</button>
-      </div>
-    </header>
+<main class="shell">
 
-    <div class="banner" id="banner">Unable to load dashboard readings. Check the existing data connection and try again.
+  <!-- Topbar -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 3c3.5 4 6 7.2 6 10.4A6 6 0 0 1 6 13.4C6 10.2 8.5 7 12 3Z"/><path d="M8.8 14.4c.6 1.7 1.9 2.6 3.7 2.6"/></svg>
+      </div>
+      <div class="brand-text">
+        <p>Residential IoT Security</p>
+        <h1>Smart Flood Sentinel</h1>
+      </div>
+    </div>
+    <div class="chips">
+      <span class="chip" id="nodeChip">node-01</span>
+      <span class="chip" id="connChip"><span class="dot" style="color:var(--muted)"></span> Connecting</span>
+      <span class="chip" id="updatedChip">Last update: —</span>
+      <button class="notify-btn" id="notifyBtn" type="button" onclick="enableFirebaseNotifications()">Enable Phone Notifications</button>
+    </div>
+  </header>
+
+  <!-- Connection error banner -->
+  <div class="banner" id="banner">Unable to reach Supabase. Check your connection and try again.</div>
+
+  <!-- Sensor error banner -->
+  <div class="sensor-banner" id="sensorBanner">
+    ⚠ Ultrasonic sensor has lost signal. The last reported water level has been set to the install height (worst-case).
+    System monitoring has halted. Please inspect the hardware and power-cycle the device.
+  </div>
+
+  <section class="layout">
+    <!-- Left column -->
+    <div style="display:grid;gap:12px">
+
+      <!-- Status card -->
+      <article class="card pad status-card" id="statusCard">
+        <div class="status-head">
+          <div>
+            <span class="state-badge" id="stateBadge"><span class="dot" style="color:var(--muted)"></span> Loading</span>
+            <h2 class="status-title" id="statusTitle">Waiting</h2>
+            <p class="status-copy"  id="statusCopy">Fetching the latest ESP32 flood monitoring telemetry.</p>
+          </div>
+        </div>
+
+        <div class="summary-grid">
+          <div class="summary-item">
+            <div class="lbl">Water Level</div>
+            <div class="val" id="sWater"><span class="skeleton">00.0 cm</span></div>
+            <div class="sub" id="sWaterSub">Ultrasonic reading</div>
+          </div>
+          <div class="summary-item">
+            <div class="lbl">Leak Sensor</div>
+            <div class="val" id="sLeak"><span class="skeleton">—</span></div>
+            <div class="sub" id="sLeakSub">Contact state</div>
+          </div>
+          <div class="summary-item">
+            <div class="lbl">Last Updated</div>
+            <div class="val" id="sTime"><span class="skeleton">--:--</span></div>
+            <div class="sub" id="sDate">—</div>
+          </div>
+          <div class="summary-item">
+            <div class="lbl">Device</div>
+            <div class="val" id="sDevice"><span class="skeleton">—</span></div>
+            <div class="sub" id="sDeviceSub">Based on latest reading</div>
+          </div>
+        </div>
+      </article>
+
+      <!-- Chart -->
+      <section class="card pad">
+        <div class="sec-head">
+          <div class="sec-title-row">
+            <div class="icon-box">
+              <svg viewBox="0 0 24 24"><path d="M4 19h16"/><path d="M6 16l4-4 3 3 5-7"/><path d="M18 8h-4"/><path d="M18 8v4"/></svg>
+            </div>
+            <div><h2>Water Level Trend</h2><p>Last 30 readings</p></div>
+          </div>
+          <span class="badge" id="histBadge">—</span>
+        </div>
+        <div class="chart-wrap empty" id="chartWrap">
+          <canvas id="wlChart"></canvas>
+          <div class="chart-empty">No readings yet. Data will appear here automatically.</div>
+        </div>
+      </section>
+
+      <!-- Config -->
+      <section class="card pad">
+        <div class="sec-head">
+          <div class="sec-title-row">
+            <div class="icon-box">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+            </div>
+            <div><h2>Alert Thresholds</h2><p>Saved to Supabase — device reads on next boot</p></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <button class="save-btn" id="saveBtn" onclick="saveConfig()">
+              <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              Save
+            </button>
+            <span class="save-status" id="saveStatus"></span>
+          </div>
+        </div>
+
+        <div class="config-grid">
+          <!-- Warning threshold -->
+          <div>
+            <div class="config-lbl" style="color:var(--warn)">⚠ Warning threshold</div>
+            <div class="config-row">
+              <input type="range" class="warn-slider" id="warnSlider" min="0.5" max="20" step="0.5" value="1">
+              <span class="config-val" id="warnVal">1.0 cm</span>
+            </div>
+          </div>
+          <!-- Critical threshold -->
+          <div>
+            <div class="config-lbl" style="color:var(--crit)">🔴 Critical threshold</div>
+            <div class="config-row">
+              <input type="range" class="crit-slider" id="critSlider" min="1" max="50" step="0.5" value="5">
+              <span class="config-val" id="critVal">5.0 cm</span>
+            </div>
+          </div>
+          <!-- Install height (read-only, written by device) -->
+          <div>
+            <div class="config-lbl">Install height (written by device on boot self-test)</div>
+            <div class="height-display">
+              <span>Measured distance from sensor to floor</span>
+              <strong id="heightDisplay">— cm</strong>
+            </div>
+          </div>
+        </div>
+      </section>
+
     </div>
 
-    <section class="layout">
-      <div>
-        <article class="card card-pad status-card" id="statusCard">
-          <div class="status-head">
-            <div>
-              <span class="status-badge" id="statusBadge"><span class="dot"></span> Loading</span>
-              <h2 class="status-title" id="statusTitle">Waiting</h2>
-              <p class="status-copy" id="statusCopy">Fetching the latest ESP32 flood monitoring telemetry.</p>
-            </div>
-          </div>
+    <!-- Right column -->
+    <aside>
 
-          <div class="summary-grid">
-            <div class="summary-item">
-              <p class="label">Current Water Level</p>
-              <p class="value" id="summaryWater"><span class="skeleton">00.0 cm</span></p>
-              <p class="subtext" id="summaryWaterSub">Ultrasonic level reading</p>
+      <!-- Telemetry -->
+      <section class="card pad">
+        <div class="sec-head">
+          <div class="sec-title-row">
+            <div class="icon-box">
+              <svg viewBox="0 0 24 24"><path d="M3 17c2 0 2-1 4-1s2 1 4 1 2-1 4-1 2 1 4 1"/><path d="M3 21c2 0 2-1 4-1s2 1 4 1 2-1 4-1 2 1 4 1"/><path d="M12 3c2.2 2.4 3.5 4.4 3.5 6.1a3.5 3.5 0 0 1-7 0C8.5 7.4 9.8 5.4 12 3Z"/></svg>
             </div>
-            <div class="summary-item">
-              <p class="label">Leak Sensor</p>
-              <p class="value" id="summaryLeak"><span class="skeleton">Pending</span></p>
-              <p class="subtext" id="summaryLeakSub">Water contact state</p>
-            </div>
-            <div class="summary-item">
-              <p class="label">Last Updated</p>
-              <p class="value" id="summaryUpdated"><span class="skeleton">--:--</span></p>
-              <p class="subtext" id="summaryUpdatedSub">Local time</p>
-            </div>
-            <div class="summary-item">
-              <p class="label">Device Status</p>
-              <p class="value" id="summaryDevice"><span class="skeleton">Checking</span></p>
-              <p class="subtext" id="summaryDeviceSub">Based on latest reading</p>
-            </div>
+            <div><h2>Latest Telemetry</h2><p>Live sensor readings</p></div>
           </div>
-        </article>
+        </div>
 
-        <section class="section card card-pad">
-          <div class="section-header">
-            <div class="section-title">
-              <div class="icon-box" aria-hidden="true">
-                <svg viewBox="0 0 24 24">
-                  <path d="M4 19h16"></path>
-                  <path d="M6 16l4-4 3 3 5-7"></path>
-                  <path d="M18 8h-4"></path>
-                  <path d="M18 8v4"></path>
-                </svg>
-              </div>
+        <div class="telem-grid">
+          <div class="metric-card">
+            <div class="metric-top">
               <div>
-                <h2>Water Level Trend</h2>
-                <p class="section-note">Simple view of recent sensor readings</p>
+                <div class="metric-lbl">Water Level</div>
+                <div class="metric-val" id="mWater">—<span class="unit">cm</span></div>
+              </div>
+              <div class="icon-box" id="waterIcon">
+                <svg viewBox="0 0 24 24"><path d="M3 17c2 0 2-1 4-1s2 1 4 1 2-1 4-1 2 1 4 1"/><path d="M12 3c2.2 2.4 3.5 4.4 3.5 6.1a3.5 3.5 0 0 1-7 0C8.5 7.4 9.8 5.4 12 3Z"/></svg>
               </div>
             </div>
-            <span class="badge" id="historyCount">Loading</span>
+            <div class="metric-sub" id="mWaterSub">Waiting for data</div>
           </div>
-          <div class="chart-wrap empty" id="chartWrap">
-            <canvas id="wlChart" role="img" aria-label="Water level over time line chart"></canvas>
-            <div class="chart-empty" id="chartEmpty">No trend data yet. Readings will appear here once telemetry is
-              available.</div>
-          </div>
-        </section>
 
-        <section class="section card card-pad">
-          <div class="section-header">
-            <div class="section-title">
-              <div class="icon-box" aria-hidden="true">
-                <svg viewBox="0 0 24 24">
-                  <path d="M12 20V10"></path>
-                  <path d="M18 20V4"></path>
-                  <path d="M6 20v-4"></path>
-                </svg>
-              </div>
+          <div class="metric-card">
+            <div class="metric-top">
               <div>
-                <h2>Sensor Setup</h2>
-                <p class="section-note">Keep the existing install-height calculation available</p>
+                <div class="metric-lbl">Leak Sensor</div>
+                <div class="metric-val" id="mLeak">—</div>
+              </div>
+              <div class="icon-box" id="leakIcon">
+                <svg viewBox="0 0 24 24"><path d="M12 3c3.5 4 6 7.2 6 10.4A6 6 0 0 1 6 13.4C6 10.2 8.5 7 12 3Z"/></svg>
               </div>
             </div>
-            <span class="badge" id="heightBadge">50 cm</span>
+            <div class="metric-sub" id="mLeakSub">No reading yet</div>
           </div>
-          <div class="control-row">
-            <input type="range" min="10" max="300" value="50" step="1" id="heightSlider"
-              aria-label="Sensor height in centimeters">
-            <strong id="heightVal">50 cm</strong>
-          </div>
-          <p class="subtext">Water level is calculated as install height minus measured distance when distance data is
-            available.</p>
-        </section>
-      </div>
 
-      <aside>
-        <section class="card card-pad">
-          <div class="section-header">
-            <div class="section-title">
-              <div class="icon-box" aria-hidden="true">
-                <svg viewBox="0 0 24 24">
-                  <path d="M3 17c2 0 2-1 4-1s2 1 4 1 2-1 4-1 2 1 4 1 2-1 4-1"></path>
-                  <path d="M3 21c2 0 2-1 4-1s2 1 4 1 2-1 4-1 2 1 4 1 2-1 4-1"></path>
-                  <path d="M12 3c2.2 2.4 3.5 4.4 3.5 6.1a3.5 3.5 0 0 1-7 0C8.5 7.4 9.8 5.4 12 3Z"></path>
-                </svg>
-              </div>
+          <div class="metric-card">
+            <div class="metric-top">
               <div>
-                <h2>Latest Telemetry</h2>
-                <p class="section-note">Readable sensor status for demos</p>
+                <div class="metric-lbl">Distance</div>
+                <div class="metric-val" id="mDist">—<span class="unit">cm</span></div>
+              </div>
+              <div class="icon-box">
+                <svg viewBox="0 0 24 24"><path d="M4 5h16"/><path d="M4 19h16"/><path d="M8 9v6"/><path d="M16 9v6"/></svg>
               </div>
             </div>
+            <div class="metric-sub">Ultrasonic sensor</div>
           </div>
 
-          <div class="telemetry-grid">
-            <div class="metric-card">
-              <div class="metric-row">
-                <div>
-                  <p class="label">Water Level</p>
-                  <p class="value" id="mWater">--<span class="unit">cm</span></p>
-                </div>
-                <div class="icon-box" id="waterIcon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24">
-                    <path d="M3 17c2 0 2-1 4-1s2 1 4 1 2-1 4-1 2 1 4 1 2-1 4-1"></path>
-                    <path d="M12 3c2.2 2.4 3.5 4.4 3.5 6.1a3.5 3.5 0 0 1-7 0C8.5 7.4 9.8 5.4 12 3Z"></path>
-                  </svg>
-                </div>
-              </div>
-              <p class="subtext" id="mWaterSub">Waiting for data</p>
-            </div>
-
-            <div class="metric-card">
-              <div class="metric-row">
-                <div>
-                  <p class="label">Leak Sensor</p>
-                  <p class="value" id="mLeak">--</p>
-                </div>
-                <div class="icon-box" id="leakIcon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24">
-                    <path d="M12 3c3.5 4 6 7.2 6 10.4A6 6 0 0 1 6 13.4C6 10.2 8.5 7 12 3Z"></path>
-                  </svg>
-                </div>
-              </div>
-              <p class="subtext" id="mLeakSub">No reading received</p>
-            </div>
-
-            <div class="metric-card">
-              <div class="metric-row">
-                <div>
-                  <p class="label">Distance</p>
-                  <p class="value" id="mDist">--<span class="unit">cm</span></p>
-                </div>
-                <div class="icon-box" aria-hidden="true">
-                  <svg viewBox="0 0 24 24">
-                    <path d="M4 5h16"></path>
-                    <path d="M4 19h16"></path>
-                    <path d="M8 9v6"></path>
-                    <path d="M16 9v6"></path>
-                  </svg>
-                </div>
-              </div>
-              <p class="subtext" id="mDistSub">Ultrasonic sensor distance</p>
-            </div>
-
-            <div class="metric-card">
-              <div class="metric-row">
-                <div>
-                  <p class="label">Alerts Today</p>
-                  <p class="value" id="mAlarms">0<span class="unit">events</span></p>
-                </div>
-                <div class="icon-box warning" aria-hidden="true">
-                  <svg viewBox="0 0 24 24">
-                    <path d="M10.3 4.3 2.8 17a2 2 0 0 0 1.7 3h15a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0Z"></path>
-                    <path d="M12 9v4"></path>
-                    <path d="M12 17h.01"></path>
-                  </svg>
-                </div>
-              </div>
-              <p class="subtext" id="mAlarmSub">Since midnight</p>
-            </div>
-          </div>
-        </section>
-
-        <section class="section card card-pad">
-          <div class="section-header">
-            <div class="section-title">
-              <div class="icon-box" aria-hidden="true">
-                <svg viewBox="0 0 24 24">
-                  <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
-                  <path d="M13.7 21a2 2 0 0 1-3.4 0"></path>
-                </svg>
-              </div>
+          <div class="metric-card">
+            <div class="metric-top">
               <div>
-                <h2>Recent Alerts</h2>
-                <p class="section-note">Warning and critical events</p>
+                <div class="metric-lbl">Alerts Today</div>
+                <div class="metric-val" id="mAlarms">0<span class="unit">events</span></div>
+              </div>
+              <div class="icon-box warn">
+                <svg viewBox="0 0 24 24"><path d="M10.3 4.3 2.8 17a2 2 0 0 0 1.7 3h15a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
               </div>
             </div>
-            <span class="badge" id="logCount">Loading</span>
+            <div class="metric-sub" id="mAlarmSub">Since midnight</div>
           </div>
-          <div class="alerts-list" id="logList">
-            <div class="loading-state">Loading alert history...</div>
+        </div>
+      </section>
+
+      <!-- Alerts list -->
+      <section class="card pad">
+        <div class="sec-head">
+          <div class="sec-title-row">
+            <div class="icon-box warn">
+              <svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+            </div>
+            <div><h2>Recent Alerts</h2><p>Warning, critical &amp; sensor events</p></div>
           </div>
-        </section>
-      </aside>
-    </section>
+          <span class="badge" id="logCount">—</span>
+        </div>
+        <div class="alerts-list" id="logList">
+          <div class="loading-state">Loading alert history…</div>
+        </div>
+      </section>
 
-    <footer class="footer">
-      <span>Smart Flood Sentinel dashboard</span>
-      <span id="footerUptime">uptime: 0 min</span>
-    </footer>
-  </main>
+    </aside>
+  </section>
 
-  <script>
+  <footer class="footer">
+    <span>Smart Flood Sentinel · ESP32 + Supabase</span>
+    <span id="footerUptime">uptime: 0 min</span>
+  </footer>
+</main>
 
-    const SUPABASE_URL = 'https://cbmleqcqohvaqelsbwuc.supabase.co';
+<script>
+// ─── Config ──────────────────────────────────────────────────
+const SUPABASE_URL  = 'https://cbmleqcqohvaqelsbwuc.supabase.co';
+const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNibWxlcWNxb2h2YXFlbHNid3VjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxNzgwMzYsImV4cCI6MjA5NDc1NDAzNn0.sYdbPsT1w3gocZlW6_pqazdKCbsun2cNStWe9Uiz8cg';
+const POLL_MS       = 5000;
+const OFFLINE_MS    = 30000;
 
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNibWxlcWNxb2h2YXFlbHNid3VjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxNzgwMzYsImV4cCI6MjA5NDc1NDAzNn0.sYdbPsT1w3gocZlW6_pqazdKCbsun2cNStWe9Uiz8cg';
+// ─── State ───────────────────────────────────────────────────
+let cfgLevelWarn     = 1.0;
+let cfgLevelCritical = 5.0;
+let cfgInstallHeight = 50.0;
+let chartInst        = null;
+const chartLabels    = [];
+const chartData      = [];
+const startTime      = new Date();
+let lastSensorError  = false;
 
-    const TABLE_NAME = 'readings';
+// ─── DOM refs ────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const el = {
+  banner:        $('banner'),
+  sensorBanner:  $('sensorBanner'),
+  nodeChip:      $('nodeChip'),
+  connChip:      $('connChip'),
+  updatedChip:   $('updatedChip'),
+  statusCard:    $('statusCard'),
+  stateBadge:    $('stateBadge'),
+  statusTitle:   $('statusTitle'),
+  statusCopy:    $('statusCopy'),
+  sWater:        $('sWater'),
+  sWaterSub:     $('sWaterSub'),
+  sLeak:         $('sLeak'),
+  sLeakSub:      $('sLeakSub'),
+  sTime:         $('sTime'),
+  sDate:         $('sDate'),
+  sDevice:       $('sDevice'),
+  sDeviceSub:    $('sDeviceSub'),
+  mWater:        $('mWater'),
+  mWaterSub:     $('mWaterSub'),
+  mLeak:         $('mLeak'),
+  mLeakSub:      $('mLeakSub'),
+  mDist:         $('mDist'),
+  mAlarms:       $('mAlarms'),
+  mAlarmSub:     $('mAlarmSub'),
+  waterIcon:     $('waterIcon'),
+  leakIcon:      $('leakIcon'),
+  chartWrap:     $('chartWrap'),
+  histBadge:     $('histBadge'),
+  logList:       $('logList'),
+  logCount:      $('logCount'),
+  warnSlider:    $('warnSlider'),
+  warnVal:       $('warnVal'),
+  critSlider:    $('critSlider'),
+  critVal:       $('critVal'),
+  heightDisplay: $('heightDisplay'),
+  saveStatus:    $('saveStatus'),
+  footerUptime:  $('footerUptime'),
+};
 
-    const POLL_INTERVAL = 5000;
+// ─── Init ────────────────────────────────────────────────────
+initChart();
+loadConfig().then(() => {
+  fetchReadings();
+  setInterval(fetchReadings, POLL_MS);
+  setInterval(updateUptime, 60000);
+});
 
-    const OFFLINE_AFTER_MS = 30000;
+// ─── Slider listeners ────────────────────────────────────────
+el.warnSlider.addEventListener('input', function(){
+  cfgLevelWarn = parseFloat(this.value);
+  el.warnVal.textContent = cfgLevelWarn.toFixed(1) + ' cm';
+  // prevent warn >= crit
+  if (cfgLevelWarn >= cfgLevelCritical) {
+    cfgLevelCritical = cfgLevelWarn + 0.5;
+    el.critSlider.value = cfgLevelCritical;
+    el.critVal.textContent = cfgLevelCritical.toFixed(1) + ' cm';
+  }
+});
 
-    let installHeight = 50;
+el.critSlider.addEventListener('input', function(){
+  cfgLevelCritical = parseFloat(this.value);
+  el.critVal.textContent = cfgLevelCritical.toFixed(1) + ' cm';
+  if (cfgLevelCritical <= cfgLevelWarn) {
+    cfgLevelWarn = cfgLevelCritical - 0.5;
+    el.warnSlider.value = cfgLevelWarn;
+    el.warnVal.textContent = cfgLevelWarn.toFixed(1) + ' cm';
+  }
+});
 
-    let startTime = new Date();
+// ─── Config load / save ──────────────────────────────────────
+async function loadConfig() {
+  try {
+    const res = await sbFetch('/rest/v1/config?id=eq.1&select=*');
+    if (!res.ok) return;
+    const data = await res.json();
+    if (!data || !data[0]) return;
+    const cfg = data[0];
 
-    let chart = null;
+    cfgLevelWarn     = Number(cfg.level_warn)     || 1.0;
+    cfgLevelCritical = Number(cfg.level_critical) || 5.0;
+    cfgInstallHeight = Number(cfg.install_height) || 50.0;
 
-    let ultrasonicPopupShown = false;
+    el.warnSlider.value        = cfgLevelWarn;
+    el.warnVal.textContent     = cfgLevelWarn.toFixed(1) + ' cm';
+    el.critSlider.value        = cfgLevelCritical;
+    el.critVal.textContent     = cfgLevelCritical.toFixed(1) + ' cm';
+    el.heightDisplay.textContent = cfgInstallHeight.toFixed(1) + ' cm';
+  } catch(e) {
+    console.warn('[Config] Load failed', e);
+  }
+}
 
-    let lastLoggedAlertTime = null;
-
-    const chartLabels = [];
-
-    const chartData = [];
-
-    const els = {
-
-      banner: document.getElementById('banner'),
-
-      connectionChip: document.getElementById('connectionChip'),
-
-      nodeChip: document.getElementById('nodeChip'),
-
-      lastUpdatedChip: document.getElementById('lastUpdatedChip'),
-
-      statusCard: document.getElementById('statusCard'),
-
-      statusBadge: document.getElementById('statusBadge'),
-
-      statusTitle: document.getElementById('statusTitle'),
-
-      statusCopy: document.getElementById('statusCopy'),
-
-      summaryWater: document.getElementById('summaryWater'),
-
-      summaryWaterSub: document.getElementById('summaryWaterSub'),
-
-      summaryLeak: document.getElementById('summaryLeak'),
-
-      summaryLeakSub: document.getElementById('summaryLeakSub'),
-
-      summaryUpdated: document.getElementById('summaryUpdated'),
-
-      summaryUpdatedSub: document.getElementById('summaryUpdatedSub'),
-
-      summaryDevice: document.getElementById('summaryDevice'),
-
-      summaryDeviceSub: document.getElementById('summaryDeviceSub'),
-
-      mWater: document.getElementById('mWater'),
-
-      mWaterSub: document.getElementById('mWaterSub'),
-
-      mLeak: document.getElementById('mLeak'),
-
-      mLeakSub: document.getElementById('mLeakSub'),
-
-      mDist: document.getElementById('mDist'),
-
-      mDistSub: document.getElementById('mDistSub'),
-
-      mAlarms: document.getElementById('mAlarms'),
-
-      mAlarmSub: document.getElementById('mAlarmSub'),
-
-      waterIcon: document.getElementById('waterIcon'),
-
-      leakIcon: document.getElementById('leakIcon'),
-
-      logList: document.getElementById('logList'),
-
-      logCount: document.getElementById('logCount'),
-
-      historyCount: document.getElementById('historyCount'),
-
-      chartWrap: document.getElementById('chartWrap'),
-
-      heightSlider: document.getElementById('heightSlider'),
-
-      heightVal: document.getElementById('heightVal'),
-
-      heightBadge: document.getElementById('heightBadge'),
-
-      footerUptime: document.getElementById('footerUptime')
-
-    };
-
-    initChart();
-
-    fetchLatest();
-
-    setInterval(fetchLatest, POLL_INTERVAL);
-
-    setInterval(updateUptime, 60000);
-
-    els.heightSlider.addEventListener('input', function () {
-
-      installHeight = parseInt(this.value, 10);
-
-      els.heightVal.textContent = installHeight + ' cm';
-
-      els.heightBadge.textContent = installHeight + ' cm';
-
+async function saveConfig() {
+  el.saveStatus.textContent = '';
+  el.saveStatus.className   = 'save-status';
+  try {
+    const body = JSON.stringify({
+      level_warn:    cfgLevelWarn,
+      level_critical: cfgLevelCritical,
     });
+    const res = await sbPatch('/rest/v1/config?id=eq.1', body);
+    if (res.ok || res.status === 204) {
+      el.saveStatus.textContent = '✓ Saved';
+      el.saveStatus.className   = 'save-status ok';
+    } else {
+      throw new Error('HTTP ' + res.status);
+    }
+  } catch(e) {
+    el.saveStatus.textContent = '✗ Failed';
+    el.saveStatus.className   = 'save-status fail';
+  }
+  setTimeout(() => { el.saveStatus.textContent = ''; }, 3000);
+}
 
-    async function fetchLatest() {
+// ─── Readings fetch ──────────────────────────────────────────
+async function fetchReadings() {
+  try {
+    const res = await sbFetch('/rest/v1/readings?select=*&order=created_at.desc&limit=30');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    hideBanner();
+    setConn(true);
 
-      try {
+    if (!data || data.length === 0) { renderEmpty(); return; }
 
-        const res = await fetch(
+    updateMetrics(data[0]);
+    updateChart(data.slice().reverse());
+    renderAlerts(data);
+    countTodayAlarms(data);
+  } catch(e) {
+    showBanner();
+    setConn(false);
+  }
+}
 
-          SUPABASE_URL + '/rest/v1/' + TABLE_NAME + '?select=*&order=created_at.desc&limit=30',
+// ─── Metrics update ──────────────────────────────────────────
+function updateMetrics(row) {
+  const wl    = getWaterLevel(row);
+  const dist  = getDistance(row);
+  const leak  = getLeakDetected(row);
+  const state = resolveState(row, wl, leak);
+  const ts    = getTime(row);
+  const fresh = Date.now() - ts.getTime() <= OFFLINE_MS;
 
-          {
+  // Sensor error banner
+  const isError = (state === 'sensor_error') || row.ultrasonic_error;
+  if (isError && !lastSensorError) {
+    el.sensorBanner.classList.add('show');
+    lastSensorError = true;
+  }
+  if (!isError) {
+    el.sensorBanner.classList.remove('show');
+    lastSensorError = false;
+  }
 
-            headers: {
+  // Status card
+  el.statusCard.className = 'card pad status-card ' + state;
+  el.stateBadge.className = 'state-badge ' + state;
+  el.stateBadge.innerHTML = '<span class="dot" style="color:currentColor"></span> ' + stateLabel(state);
+  el.statusTitle.textContent = stateLabel(state);
+  el.statusCopy.textContent  = stateCopy(state);
 
-              'apikey': SUPABASE_KEY,
+  // Chips
+  el.updatedChip.textContent = 'Last update: ' + fmtDateTime(ts);
+  setConn(fresh, fresh ? 'Live' : 'Stale');
 
-              'Authorization': 'Bearer ' + SUPABASE_KEY
+  // Summary
+  el.sWater.innerHTML = fmtLevel(wl) + ' <span style="font-size:12px;color:var(--muted)">cm</span>';
+  el.sWaterSub.textContent = isError ? 'Sensor error — showing install height' : waterText(wl);
+  el.sLeak.textContent    = leak ? 'Detected' : 'Clear';
+  el.sLeakSub.textContent = leak ? 'Water contact active' : 'No contact reported';
+  el.sTime.textContent    = fmtTime(ts);
+  el.sDate.textContent    = fmtDate(ts);
+  el.sDevice.textContent  = fresh ? 'Online' : 'Stale';
+  el.sDeviceSub.textContent = fresh ? 'Recent telemetry received' : 'No reading in 30 s';
 
-            }
+  // Telemetry cards
+  el.mWater.innerHTML = (isError ? '<span style="color:var(--error)">ERR</span>' : fmtLevel(wl)) + '<span class="unit">cm</span>';
+  el.mWaterSub.textContent = isError ? 'Ultrasonic signal lost' : waterText(wl);
+  el.mLeak.textContent    = leak ? 'Detected' : 'Clear';
+  el.mLeakSub.textContent = leak ? 'Sensor triggered' : 'Sensor clear';
+  el.mDist.innerHTML = fmtLevel(dist) + '<span class="unit">cm</span>';
 
+  el.waterIcon.className = 'icon-box ' + iconClass(state);
+  el.leakIcon.className  = 'icon-box '  + (leak ? 'crit' : 'safe');
+
+  // Install height display (may have been updated by device)
+  if (Number.isFinite(dist) && !isError) {
+    cfgInstallHeight = dist + parseFloat(fmtLevel(wl));
+  }
+}
+
+// ─── Chart ───────────────────────────────────────────────────
+function updateChart(rows) {
+  const valid = rows.filter(r => Number.isFinite(getWaterLevel(r)) && !r.ultrasonic_error);
+  chartLabels.length = 0;
+  chartData.length   = 0;
+  valid.forEach(r => {
+    chartLabels.push(fmtTime(getTime(r)));
+    chartData.push(+(getWaterLevel(r).toFixed(1)));
+  });
+
+  el.histBadge.textContent = valid.length + ' readings';
+  el.chartWrap.classList.toggle('empty', valid.length === 0);
+
+  // Color points by state
+  const colors = valid.map(r => {
+    const s = resolveState(r, getWaterLevel(r), getLeakDetected(r));
+    return stateColor(s);
+  });
+  chartInst.data.datasets[0].pointBackgroundColor = colors;
+  chartInst.data.datasets[0].pointBorderColor     = colors;
+
+  // Draw threshold lines
+  chartInst.options.plugins.annotation = undefined; // reset
+  chartInst.update('none');
+}
+
+function initChart() {
+  const ctx = $('wlChart').getContext('2d');
+  chartInst = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: chartLabels,
+      datasets: [{
+        label: 'Water level (cm)',
+        data: chartData,
+        borderColor: '#2a7fc4',
+        backgroundColor: 'rgba(42,127,196,0.1)',
+        borderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        fill: true,
+        tension: 0.3,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => 'Level: ' + ctx.parsed.y + ' cm'
           }
-
-        );
-
-        if (!res.ok) throw new Error('Request failed');
-
-        const data = await res.json();
-
-        hideBanner();
-
-        setConnection(true);
-
-        if (!data || data.length === 0) {
-
-          renderEmpty();
-
-          return;
-
         }
-
-        const latest = data[0];
-
-        updateMetrics(latest);
-
-        updateChart(data.slice().reverse());
-
-        renderAlerts(data);
-
-        checkAlarms(data);
-
-      } catch (e) {
-
-        showBanner();
-
-        setConnection(false);
-
-      }
-
-    }
-
-    function renderEmpty() {
-
-      els.statusCard.className = 'card card-pad status-card';
-
-      els.statusBadge.innerHTML = '<span class="dot"></span> No Data';
-
-      els.statusTitle.textContent = 'Waiting';
-
-      els.statusCopy.textContent = 'No telemetry has been received yet. The dashboard will update automatically when readings arrive.';
-
-      els.logList.innerHTML = '<div class="empty-state">No alert events yet. Warning and critical events will appear here automatically.</div>';
-
-      els.logCount.textContent = '0 events';
-
-      els.historyCount.textContent = '0 readings';
-
-      els.chartWrap.classList.add('empty');
-
-    }
-
-    function updateMetrics(row) {
-
-      const wl = getWaterLevel(row);
-
-      const dist = getDistance(row);
-
-      const leak = getLeakDetected(row);
-
-      const state = getState(row, wl, leak);
-
-      const ultrasonicError = row.ultrasonic_error === true;
-
-      const time = getRowTime(row);
-
-      const online = Date.now() - time.getTime() <= OFFLINE_AFTER_MS;
-
-      const nodeId = row.node_id || row.device_id || 'node-01';
-
-      els.statusCard.className = 'card card-pad status-card ' + state;
-
-      els.statusBadge.innerHTML = '<span class="dot"></span> ' + stateLabel(state);
-
-      els.statusTitle.textContent = stateLabel(state);
-
-      els.statusCopy.textContent = statusCopy(state);
-
-      els.nodeChip.textContent = 'Node: ' + nodeId;
-
-      els.lastUpdatedChip.textContent = 'Last update: ' + formatDateTime(time);
-
-      setConnection(online, online ? 'Live' : 'Stale data');
-
-      els.summaryWater.innerHTML = formatLevel(wl) + '<span class="unit">cm</span>';
-
-      els.summaryWaterSub.textContent = waterLevelText(wl);
-
-      els.summaryLeak.textContent = leak ? 'Detected' : 'Clear';
-
-      els.summaryLeakSub.textContent = leak ? 'Water contact sensor is active' : 'No leak contact reported';
-
-      els.summaryUpdated.textContent = fmtTime(time);
-
-      els.summaryUpdatedSub.textContent = formatDate(time);
-
-      els.summaryDevice.textContent = online ? 'Online' : 'Stale';
-
-      els.summaryDeviceSub.textContent = online ? 'Recent telemetry received' : 'No fresh reading in 30 seconds';
-
-      els.mWater.innerHTML = formatLevel(wl) + '<span class="unit">cm</span>';
-
-      els.mWaterSub.textContent = waterLevelText(wl);
-
-      els.mLeak.textContent = leak ? 'Detected' : 'Clear';
-
-      els.mLeakSub.textContent = leak ? 'Leak sensor has triggered' : 'Leak sensor is clear';
-
-      els.mDist.innerHTML = formatLevel(dist) + '<span class="unit">cm</span>';
-
-      els.mDistSub.textContent = ultrasonicError
-
-        ? '⚠ Ultrasonic sensor error'
-
-        : Number.isFinite(dist)
-
-          ? 'Measured by ultrasonic sensor'
-
-          : 'Distance not included in reading';
-
-      els.waterIcon.className = 'icon-box ' + state;
-
-      els.leakIcon.className = 'icon-box ' + (leak ? 'critical' : 'safe');
-
-
-      if (ultrasonicError) {
-
-        setConnection(true, 'Sensor fault');
-
-
-        if (!ultrasonicPopupShown) {
-
-          alert('⚠ Ultrasonic sensor not responding. Please check sensor wiring.');
-
-          ultrasonicPopupShown = true;
-
-        }
-
-      } else {
-
-        ultrasonicPopupShown = false;
-
-      }
-
-    }
-
-    function updateChart(rows) {
-
-      const validRows = rows.filter(r => Number.isFinite(getWaterLevel(r)));
-
-      chartLabels.length = 0;
-
-      chartData.length = 0;
-
-      validRows.forEach(r => {
-
-        chartLabels.push(fmtTime(getRowTime(r)));
-
-        chartData.push(roundLevel(getWaterLevel(r)));
-
-      });
-
-      els.historyCount.textContent = validRows.length + ' readings';
-
-      els.chartWrap.classList.toggle('empty', validRows.length === 0);
-
-      chart.data.datasets[0].pointBackgroundColor = validRows.map(r => stateColor(getState(r, getWaterLevel(r), getLeakDetected(r))));
-
-      chart.data.datasets[0].pointBorderColor = validRows.map(r => stateColor(getState(r, getWaterLevel(r), getLeakDetected(r))));
-
-      chart.update();
-
-    }
-
-    function renderAlerts(rows) {
-
-      const alerts = rows.filter(r => getState(r, getWaterLevel(r), getLeakDetected(r)) !== 'safe');
-
-      els.logCount.textContent = alerts.length + ' events';
-
-      if (!alerts.length) {
-
-        els.logList.innerHTML = '<div class="empty-state">No alert events yet. Warning and critical events will appear here automatically.</div>';
-
-        return;
-
-      }
-
-      els.logList.innerHTML = alerts.map(row => {
-
-        const wl = getWaterLevel(row);
-
-        const leak = getLeakDetected(row);
-
-        const state = getState(row, wl, leak);
-
-        const message = leak && state === 'critical'
-
-          ? 'Leak detected with critical water level'
-
-          : leak
-
-            ? 'Leak sensor triggered'
-
-            : state === 'critical'
-
-              ? 'Critical water level threshold exceeded'
-
-              : 'Water level warning threshold exceeded';
-
-        return `
-<article class="alert-item ${state}">
-<div class="alert-icon ${state}" aria-hidden="true">
-<svg viewBox="0 0 24 24"><path d="M10.3 4.3 2.8 17a2 2 0 0 0 1.7 3h15a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>
-</div>
-<div>
-<div class="alert-top">
-<div>
-<p class="alert-title">${escapeHtml(stateLabel(state))}: ${escapeHtml(message)}</p>
-<div class="alert-meta">
-<span>Water level: ${escapeHtml(formatLevel(wl))} cm</span>
-<span>Leak: ${leak ? 'Detected' : 'Clear'}</span>
-<span>${escapeHtml(formatDateTime(getRowTime(row)))}</span>
-</div>
-</div>
-<span class="badge ${state}">${escapeHtml(stateLabel(state))}</span>
-</div>
-</div>
-</article>
-
-    `;
-
-      }).join('');
-
-    }
-
-    function checkAlarms(rows) {
-
-      const todayStart = new Date();
-
-      todayStart.setHours(0, 0, 0, 0);
-
-      const todayAlarms = rows.filter(r => {
-
-        const state = getState(r, getWaterLevel(r), getLeakDetected(r));
-
-        return state !== 'safe' && getRowTime(r) > todayStart;
-
-      });
-
-      els.mAlarms.innerHTML = todayAlarms.length + '<span class="unit">events</span>';
-
-    }
-
-    function initChart() {
-
-      const ctx = document.getElementById('wlChart').getContext('2d');
-
-      chart = new Chart(ctx, {
-
-        type: 'line',
-
-        data: {
-
-          labels: chartLabels,
-
-          datasets: [{
-
-            label: 'Water level (cm)',
-
-            data: chartData,
-
-            borderColor: '#1d6fb8',
-
-            backgroundColor: 'rgba(29,111,184,0.12)',
-
-            borderWidth: 2,
-
-            pointRadius: 3,
-
-            pointHoverRadius: 5,
-
-            fill: true,
-
-            tension: 0.32
-
-          }]
-
+      },
+      scales: {
+        x: {
+          ticks: { color: '#7a9ab8', maxTicksLimit: 8, font: { family: 'IBM Plex Mono', size: 10 } },
+          grid: { color: 'rgba(120,160,200,0.1)' },
+          border: { color: 'rgba(120,160,200,0.2)' }
         },
-
-        options: {
-
-          responsive: true,
-
-          maintainAspectRatio: false,
-
-          interaction: { mode: 'index', intersect: false },
-
-          plugins: {
-
-            legend: { display: false },
-
-            tooltip: { callbacks: { label: context => 'Water level: ' + context.parsed.y + ' cm' } }
-
-          },
-
-          scales: {
-
-            x: {
-
-              ticks: { color: '#9aa9bb', maxTicksLimit: 8, font: { family: 'Inter', size: 11, weight: '600' } },
-
-              grid: { color: 'rgba(148,163,184,0.14)' },
-
-              border: { color: 'rgba(148,163,184,0.22)' }
-
-            },
-
-            y: {
-
-              beginAtZero: true,
-
-              suggestedMax: 12,
-
-              ticks: { color: '#9aa9bb', callback: v => v + ' cm', font: { family: 'Inter', size: 11, weight: '600' } },
-
-              grid: { color: 'rgba(148,163,184,0.14)' },
-
-              border: { color: 'rgba(148,163,184,0.22)' }
-
-            }
-
-          }
-
-        }
-
-      });
-
-    }
-
-    function getWaterLevel(row) {
-
-      const direct = Number(row.water_level ?? row.water_level_cm ?? row.level_cm);
-
-      if (Number.isFinite(direct)) return direct;
-
-      const distance = getDistance(row);
-
-      if (Number.isFinite(distance)) return Math.max(installHeight - distance, 0);
-
-      return NaN;
-
-    }
-
-    function getDistance(row) {
-
-      const value = Number(row.distance ?? row.distance_cm ?? row.ultrasonic_distance_cm);
-
-      return Number.isFinite(value) ? value : NaN;
-
-    }
-
-    function getLeakDetected(row) {
-
-      const value = row.leak_detected ?? row.leak ?? row.water_leak ?? row.alarm;
-
-      return value === true || value === 1 || value === '1' || String(value).toLowerCase() === 'true';
-
-    }
-
-    function getState(row, waterLevel, leakDetected) {
-
-      const explicit = String(row.state ?? row.status ?? '').toLowerCase();
-
-      if (explicit.includes('critical')) return 'critical';
-
-      if (explicit.includes('warning') || explicit.includes('warn')) return 'warning';
-
-      if (explicit.includes('safe') || explicit.includes('normal')) return 'safe';
-
-      if (leakDetected && waterLevel >= 10) return 'critical';
-
-      if (waterLevel >= 10) return 'critical';
-
-      if (leakDetected || waterLevel >= 5 || row.alarm === true) return 'warning';
-
-      return 'safe';
-
-    }
-
-    function getRowTime(row) {
-
-      const value = row.created_at ?? row.ts ?? row.timestamp ?? row.time;
-
-      const parsed = new Date(value);
-
-      return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
-
-    }
-
-    function stateLabel(state) {
-
-      return { safe: 'Safe', warning: 'Warning', critical: 'Critical' }[state] || 'Safe';
-
-    }
-
-    function stateColor(state) {
-
-      return { safe: '#16825a', warning: '#ad751b', critical: '#c43c34' }[state] || '#8997a8';
-
-    }
-
-    function statusCopy(state) {
-
-      if (state === 'critical') return 'Critical flood risk is active. Immediate attention is recommended.';
-
-      if (state === 'warning') return 'A warning condition is active. Check the sensor area and continue monitoring.';
-
-      return 'No leak is detected and the water level is within the safe range.';
-
-    }
-
-    function waterLevelText(value) {
-
-      if (!Number.isFinite(value)) return 'Sensor reading unavailable';
-
-      if (value >= 10) return 'Critical flood threshold exceeded';
-
-      if (value >= 5) return 'Above warning threshold';
-
-      return 'Within safe range';
-
-    }
-
-    function formatLevel(value) {
-
-      return Number.isFinite(value) ? roundLevel(value).toFixed(1) : '--';
-
-    }
-
-    function roundLevel(value) {
-
-      return Math.round(Number(value) * 10) / 10;
-
-    }
-
-    function fmtTime(d) {
-
-      return d.toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-
-    }
-
-    function formatDate(d) {
-
-      return d.toLocaleDateString('en', { month: 'short', day: 'numeric', year: 'numeric' });
-
-    }
-
-    function formatDateTime(d) {
-
-      return formatDate(d) + ', ' + fmtTime(d);
-
-    }
-
-    function updateUptime() {
-
-      const min = Math.floor((Date.now() - startTime) / 60000);
-
-      els.footerUptime.textContent = 'uptime: ' + min + ' min';
-
-    }
-
-    function setConnection(ok, text) {
-
-      els.connectionChip.innerHTML = '<span class="dot"></span> ' + (text || (ok ? 'Connected' : 'Offline'));
-
-      els.connectionChip.style.color = ok ? 'var(--safe)' : 'var(--critical)';
-
-    }
-
-    function showBanner() { els.banner.classList.add('show'); }
-
-    function hideBanner() { els.banner.classList.remove('show'); }
-
-    function escapeHtml(value) {
-
-      return String(value)
-
-        .replaceAll('&', '&amp;')
-
-        .replaceAll('<', '&lt;')
-
-        .replaceAll('>', '&gt;')
-
-        .replaceAll('"', '&quot;')
-
-        .replaceAll("'", '&#039;');
-
-    }
-  </script>
-
-
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
-    import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-messaging.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyDBaSsi_F1ij7fyZEpx-ZgIezEVvEeVOBI",
-      authDomain: "flood-monitoring-system-6fd9b.firebaseapp.com",
-      projectId: "flood-monitoring-system-6fd9b",
-      storageBucket: "flood-monitoring-system-6fd9b.firebasestorage.app",
-      messagingSenderId: "710760027385",
-      appId: "1:710760027385:web:79820a660f7cebc239be28",
-      measurementId: "G-7HHDB6PFKX"
-    };
-
-    const VAPID_PUBLIC_KEY = "oyRdeXiDfObrIIbMuHESi9FZQpy049Y3_nOHmvWOmkw";
-
-    const FCM_SUPABASE_URL = "https://cbmleqcqohvaqelsbwuc.supabase.co";
-    const FCM_SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXAiOiJjYm1sZXFjcW9odmFxZWxzYnd1YyIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNzc5MTc4MDM2LCJleHAiOjIwOTQ3NTQwMzZ9.sYdbPsT1w3gocZlW6_pqazdKCbsun2cNStWe9Uiz8cg";
-
-    const firebaseApp = initializeApp(firebaseConfig);
-    const messaging = getMessaging(firebaseApp);
-
-    window.enableFirebaseNotifications = async function () {
-      const notifyBtn = document.getElementById("notifyBtn");
-
-      try {
-        if (!("Notification" in window)) {
-          alert("This browser does not support notifications.");
-          return;
-        }
-
-        if (!("serviceWorker" in navigator)) {
-          alert("This browser does not support service workers, so Firebase push notifications will not work.");
-          return;
-        }
-
-        if (notifyBtn) {
-          notifyBtn.disabled = true;
-          notifyBtn.textContent = "Enabling...";
-        }
-
-        const permission = await Notification.requestPermission();
-
-        if (permission !== "granted") {
-          alert("Notification permission not granted.");
-          if (notifyBtn) {
-            notifyBtn.disabled = false;
-            notifyBtn.textContent = "Enable Phone Notifications";
-          }
-          return;
-        }
-
-        const registration = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
-
-        const token = await getToken(messaging, {
-          vapidKey: VAPID_PUBLIC_KEY,
-          serviceWorkerRegistration: registration
-        });
-
-        if (!token) {
-          alert("No Firebase token received.");
-          if (notifyBtn) {
-            notifyBtn.disabled = false;
-            notifyBtn.textContent = "Enable Phone Notifications";
-          }
-          return;
-        }
-
-        const tokenRes = await fetch(`${FCM_SUPABASE_URL}/rest/v1/notification_tokens`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "apikey": FCM_SUPABASE_KEY,
-            "Authorization": `Bearer ${FCM_SUPABASE_KEY}`,
-            "Prefer": "resolution=merge-duplicates"
-          },
-          body: JSON.stringify({
-            token: token,
-            device_name: "Phone Browser"
-          })
-        });
-
-        if (!tokenRes.ok) {
-          const errorText = await tokenRes.text();
-          throw new Error("Could not save notification token: " + errorText);
-        }
-
-        console.log("FCM token saved:", token);
-        alert("Firebase phone notifications enabled.");
-
-        if (notifyBtn) {
-          notifyBtn.disabled = true;
-          notifyBtn.textContent = "Notifications Enabled";
-        }
-      } catch (err) {
-        console.error("Notification setup failed:", err);
-        alert("Notification setup failed. Check the browser console.");
-
-        if (notifyBtn) {
-          notifyBtn.disabled = false;
-          notifyBtn.textContent = "Enable Phone Notifications";
+        y: {
+          beginAtZero: true,
+          suggestedMax: 10,
+          ticks: { color: '#7a9ab8', callback: v => v + ' cm', font: { family: 'IBM Plex Mono', size: 10 } },
+          grid: { color: 'rgba(120,160,200,0.1)' },
+          border: { color: 'rgba(120,160,200,0.2)' }
         }
       }
-    };
+    }
+  });
+}
 
-    onMessage(messaging, (payload) => {
-      console.log("Foreground FCM message:", payload);
+// ─── Alerts list ─────────────────────────────────────────────
+function renderAlerts(rows) {
+  const alerts = rows.filter(r => {
+    const s = resolveState(r, getWaterLevel(r), getLeakDetected(r));
+    return s !== 'safe';
+  });
 
-      if (payload.notification) {
-        new Notification(payload.notification.title || "Flood Alert", {
-          body: payload.notification.body || "New flood alert received.",
-          icon: "/icon.png"
-        });
+  el.logCount.textContent = alerts.length + ' events';
+
+  if (!alerts.length) {
+    el.logList.innerHTML = '<div class="empty-state">No alert events yet. Warning, critical, and sensor events will appear here automatically.</div>';
+    return;
+  }
+
+  el.logList.innerHTML = alerts.map(row => {
+    const wl    = getWaterLevel(row);
+    const leak  = getLeakDetected(row);
+    const state = resolveState(row, wl, leak);
+    const isErr = state === 'sensor_error' || row.ultrasonic_error;
+    const rising = row.rising === true || row.rising === 1;
+
+    const msg = isErr
+      ? 'Ultrasonic sensor lost signal — system halted'
+      : leak && state === 'critical'
+        ? 'Leak detected with critical water level'
+        : leak
+          ? 'Leak sensor triggered'
+          : state === 'critical'
+            ? 'Critical water level exceeded'
+            : 'Water level above warning threshold';
+
+    const risingTag = rising ? '<span class="alert-badge rising">⬆ rising</span>' : '';
+
+    return `
+      <article class="alert-item ${esc(state)}">
+        <div class="alert-icon">
+          <svg viewBox="0 0 24 24"><path d="M10.3 4.3 2.8 17a2 2 0 0 0 1.7 3h15a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+        </div>
+        <div>
+          <p class="alert-title">${esc(stateLabel(state))}: ${esc(msg)}</p>
+          <div class="alert-meta">
+            <span>Level: ${esc(fmtLevel(wl))} cm</span>
+            <span>Leak: ${leak ? 'Detected' : 'Clear'}</span>
+            ${risingTag}
+            <span>${esc(fmtDateTime(getTime(row)))}</span>
+          </div>
+        </div>
+      </article>`;
+  }).join('');
+}
+
+function countTodayAlarms(rows) {
+  const midnight = new Date(); midnight.setHours(0,0,0,0);
+  const n = rows.filter(r => {
+    const s = resolveState(r, getWaterLevel(r), getLeakDetected(r));
+    return s !== 'safe' && getTime(r) > midnight;
+  }).length;
+  el.mAlarms.innerHTML = n + '<span class="unit">events</span>';
+}
+
+function renderEmpty() {
+  el.statusCard.className    = 'card pad status-card';
+  el.stateBadge.className    = 'state-badge';
+  el.stateBadge.innerHTML    = '<span class="dot" style="color:var(--muted)"></span> No Data';
+  el.statusTitle.textContent = 'Waiting';
+  el.statusCopy.textContent  = 'No telemetry received yet. Dashboard updates automatically.';
+  el.logList.innerHTML       = '<div class="empty-state">No alert events yet.</div>';
+  el.logCount.textContent    = '0 events';
+  el.histBadge.textContent   = '0 readings';
+  el.chartWrap.classList.add('empty');
+}
+
+// ─── Data helpers ─────────────────────────────────────────────
+function getWaterLevel(row) {
+  const v = Number(row.water_level ?? row.water_level_cm ?? NaN);
+  if (Number.isFinite(v)) return v;
+  const d = getDistance(row);
+  return Number.isFinite(d) ? Math.max(0, cfgInstallHeight - d) : NaN;
+}
+
+function getDistance(row) {
+  const v = Number(row.distance ?? row.distance_cm ?? NaN);
+  return Number.isFinite(v) ? v : NaN;
+}
+
+function getLeakDetected(row) {
+  const v = row.alarm ?? row.leak_detected ?? row.leak;
+  return v === true || v === 1 || String(v).toLowerCase() === 'true';
+}
+
+function resolveState(row, wl, leak) {
+  // 1. Explicit state from firmware (preferred)
+  const explicit = String(row.state ?? '').toLowerCase().trim();
+  if (explicit === 'critical')     return 'critical';
+  if (explicit === 'warning')      return 'warning';
+  if (explicit === 'safe')         return 'safe';
+  if (explicit === 'sensor_error') return 'sensor_error';
+
+  // 2. Sensor error flag
+  if (row.ultrasonic_error === true || row.ultrasonic_error === 1) return 'sensor_error';
+
+  // 3. Fallback: derive from thresholds (for legacy rows without state field)
+  if (wl >= cfgLevelCritical)          return 'critical';
+  if (wl >= cfgLevelWarn || leak)      return 'warning';
+  return 'safe';
+}
+
+function getTime(row) {
+  const v = row.created_at ?? row.ts ?? row.timestamp;
+  const d = new Date(v);
+  return isNaN(d.getTime()) ? new Date() : d;
+}
+
+// ─── Label / copy helpers ─────────────────────────────────────
+function stateLabel(s) {
+  return { safe:'Safe', warning:'Warning', critical:'Critical', sensor_error:'Sensor Error' }[s] || 'Safe';
+}
+
+function stateColor(s) {
+  return { safe:'#1a6e45', warning:'#a07010', critical:'#a02020', sensor_error:'#8a4010' }[s] || '#4a6880';
+}
+
+function iconClass(s) {
+  return { safe:'safe', warning:'warn', critical:'crit', sensor_error:'err' }[s] || '';
+}
+
+function stateCopy(s) {
+  if (s === 'sensor_error') return 'Ultrasonic sensor has lost signal. The system has halted and requires manual inspection.';
+  if (s === 'critical')     return 'Critical flood risk detected. Immediate attention required.';
+  if (s === 'warning')      return 'Warning condition active. Check the sensor area and continue monitoring.';
+  return 'No leak detected. Water level is within the safe range.';
+}
+
+function waterText(v) {
+  if (!Number.isFinite(v))    return 'Sensor unavailable';
+  if (v >= cfgLevelCritical)  return 'Critical threshold exceeded';
+  if (v >= cfgLevelWarn)      return 'Above warning threshold';
+  return 'Within safe range';
+}
+
+function fmtLevel(v) {
+  return Number.isFinite(v) ? (Math.round(v * 10) / 10).toFixed(1) : '--';
+}
+function fmtTime(d)     { return d.toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit',second:'2-digit'}) }
+function fmtDate(d)     { return d.toLocaleDateString('en',{month:'short',day:'numeric',year:'numeric'}) }
+function fmtDateTime(d) { return fmtDate(d) + ' ' + fmtTime(d) }
+
+// ─── UI helpers ──────────────────────────────────────────────
+function setConn(ok, label) {
+  const color = ok ? 'var(--safe)' : 'var(--crit)';
+  el.connChip.innerHTML = `<span class="dot" style="color:${color}"></span> ${label || (ok ? 'Live' : 'Offline')}`;
+  el.connChip.style.color = color;
+}
+
+function showBanner() { el.banner.classList.add('show') }
+function hideBanner() { el.banner.classList.remove('show') }
+
+function updateUptime() {
+  const min = Math.floor((Date.now() - startTime) / 60000);
+  el.footerUptime.textContent = 'uptime: ' + min + ' min';
+}
+
+function esc(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+}
+
+// ─── Supabase fetch wrappers ──────────────────────────────────
+function sbHeaders(extra={}) {
+  return { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, ...extra };
+}
+function sbFetch(path) {
+  return fetch(SUPABASE_URL + path, { headers: sbHeaders() });
+}
+function sbPatch(path, body) {
+  return fetch(SUPABASE_URL + path, {
+    method: 'PATCH',
+    headers: sbHeaders({ 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }),
+    body
+  });
+}
+</script>
+
+<script type="module">
+// ─── Firebase phone/browser notifications ─────────────────────
+// This script asks for notification permission, creates an FCM token,
+// and saves that token in Supabase notification_tokens.
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-messaging.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDBaSsi_F1ij7fyZEpx-ZgIezEVvEeVOBI",
+  authDomain: "flood-monitoring-system-6fd9b.firebaseapp.com",
+  projectId: "flood-monitoring-system-6fd9b",
+  storageBucket: "flood-monitoring-system-6fd9b.firebasestorage.app",
+  messagingSenderId: "710760027385",
+  appId: "1:710760027385:web:79820a660f7cebc239be28",
+  measurementId: "G-7HHDB6PFKX"
+};
+
+const FIREBASE_VAPID_PUBLIC_KEY = "oyRdeXiDfObrIIbMuHESi9FZQpy049Y3_nOHmvWOmkw";
+
+const firebaseApp = initializeApp(firebaseConfig);
+const messaging = getMessaging(firebaseApp);
+
+window.enableFirebaseNotifications = async function () {
+  const btn = document.getElementById("notifyBtn");
+
+  try {
+    if (!("Notification" in window)) {
+      alert("This browser does not support notifications.");
+      return;
+    }
+
+    if (!("serviceWorker" in navigator)) {
+      alert("This browser does not support service workers, so Firebase push notifications cannot run.");
+      return;
+    }
+
+    if (btn) {
+      btn.textContent = "Requesting permission...";
+      btn.classList.remove("enabled", "fail");
+    }
+
+    const permission = await Notification.requestPermission();
+
+    if (permission !== "granted") {
+      if (btn) {
+        btn.textContent = "Notifications Blocked";
+        btn.classList.add("fail");
       }
+      alert("Notification permission was not granted.");
+      return;
+    }
+
+    const registration = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
+
+    const token = await getToken(messaging, {
+      vapidKey: FIREBASE_VAPID_PUBLIC_KEY,
+      serviceWorkerRegistration: registration
     });
-  </script>
+
+    if (!token) {
+      if (btn) {
+        btn.textContent = "No Token Created";
+        btn.classList.add("fail");
+      }
+      alert("No Firebase token was received. Try again from the deployed HTTPS Vercel link.");
+      return;
+    }
+
+    const saveRes = await fetch(`${SUPABASE_URL}/rest/v1/notification_tokens?on_conflict=token`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": SUPABASE_KEY,
+        "Authorization": `Bearer ${SUPABASE_KEY}`,
+        "Prefer": "resolution=merge-duplicates"
+      },
+      body: JSON.stringify({
+        token: token,
+        device_name: "Phone Browser"
+      })
+    });
+
+    if (!saveRes.ok) {
+      throw new Error("Could not save token to Supabase. HTTP " + saveRes.status);
+    }
+
+    if (btn) {
+      btn.textContent = "Notifications Enabled";
+      btn.classList.add("enabled");
+    }
+
+    console.log("FCM token saved to Supabase:", token);
+    alert("Phone notifications enabled. Token saved in Supabase.");
+  } catch (err) {
+    console.error("Firebase notification setup failed:", err);
+    if (btn) {
+      btn.textContent = "Notification Setup Failed";
+      btn.classList.add("fail");
+    }
+    alert("Notification setup failed. Check the browser console.");
+  }
+};
+
+onMessage(messaging, (payload) => {
+  console.log("Foreground FCM message:", payload);
+
+  if (payload.notification && Notification.permission === "granted") {
+    new Notification(payload.notification.title || "Smart Flood Sentinel Alert", {
+      body: payload.notification.body || "Flood alert received.",
+      icon: "/icon.png"
+    });
+  }
+});
+</script>
 
 </body>
-
 </html>
