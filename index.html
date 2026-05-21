@@ -433,7 +433,9 @@ let installHeight = 50;
 let alarmCount    = 0;
 let logCount      = 0;
 let startTime     = new Date();
+let ultrasonicPopupShown = false;
 let chart         = null;
+let lastLoggedAlertTime = null;
 
 const chartLabels = [];
 const chartData   = [];
@@ -490,23 +492,42 @@ function updateMetrics(row) {
   const wl   = parseFloat((row.water_level ?? 0).toFixed(1));
   const dist = parseFloat((row.distance    ?? installHeight).toFixed(1));
   const isAlarm = row.alarm === true;
+  const ultrasonicError = row.ultrasonic_error === true;
 
   document.getElementById('mWater').innerHTML   = wl   + '<span class="metric-unit">cm</span>';
   document.getElementById('mDist').innerHTML    = dist + '<span class="metric-unit">cm</span>';
   document.getElementById('mWaterSub').textContent = isAlarm ? '⚠ rising' : 'stable';
-  document.getElementById('mDistSub').textContent  = 'ultrasonic reading';
+ document.getElementById('mDistSub').textContent = ultrasonicError
+  ? '⚠ ultrasonic sensor error'
+  : 'ultrasonic reading'; 
   document.getElementById('lastUpdate').textContent = 'updated ' + fmtTime(new Date(row.created_at));
+if (ultrasonicError) {
+  setStatus('alarm');
 
-  setStatus(isAlarm ? 'alarm' : wl === 0 ? 'sleep' : 'normal');
+  addLog(
+    'red',
+    '[SENSOR ERROR] Ultrasonic sensor not responding',
+    new Date(row.created_at)
+  );
 
-  if (isAlarm) {
-    alarmCount++;
-    document.getElementById('mAlarms').innerHTML = alarmCount + '<span class="metric-unit">times</span>';
-    addLog(row.alarm ? 'red' : 'blue', row.alarm
-      ? '[ALARM] Water rising! ' + wl + ' cm'
-      : '[INFO] Water level: ' + wl + ' cm',
-      new Date(row.created_at));
+  if (!ultrasonicPopupShown) {
+    alert('⚠ Ultrasonic sensor not responding. Please check sensor wiring.');
+    ultrasonicPopupShown = true;
   }
+
+} else {
+  ultrasonicPopupShown = false;
+  setStatus(isAlarm ? 'alarm' : wl === 0 ? 'sleep' : 'normal');
+}
+if (isAlarm && lastLoggedAlertTime !== row.created_at) {
+  lastLoggedAlertTime = row.created_at;
+
+  addLog(
+    'red',
+    '[ALARM] Water rising! ' + wl + ' cm',
+    new Date(row.created_at)
+  );
+}
 }
 
 function updateChart(rows) {
