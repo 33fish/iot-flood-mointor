@@ -804,6 +804,8 @@ const OFFLINE_AFTER_MS = 30000;
 let installHeight = 50;
 let startTime = new Date();
 let chart = null;
+let ultrasonicPopupShown = false;
+let lastLoggedAlertTime = null;
 
 const chartLabels = [];
 const chartData = [];
@@ -906,6 +908,7 @@ function updateMetrics(row) {
   const dist = getDistance(row);
   const leak = getLeakDetected(row);
   const state = getState(row, wl, leak);
+  const ultrasonicError = row.ultrasonic_error === true;
   const time = getRowTime(row);
   const online = Date.now() - time.getTime() <= OFFLINE_AFTER_MS;
   const nodeId = row.node_id || row.device_id || 'node-01';
@@ -933,11 +936,28 @@ function updateMetrics(row) {
   els.mLeak.textContent = leak ? 'Detected' : 'Clear';
   els.mLeakSub.textContent = leak ? 'Leak sensor has triggered' : 'Leak sensor is clear';
   els.mDist.innerHTML = formatLevel(dist) + '<span class="unit">cm</span>';
-  els.mDistSub.textContent = Number.isFinite(dist) ? 'Measured by ultrasonic sensor' : 'Distance not included in reading';
+ els.mDistSub.textContent = ultrasonicError
+  ? '⚠ Ultrasonic sensor error'
+  : Number.isFinite(dist)
+    ? 'Measured by ultrasonic sensor'
+    : 'Distance not included in reading';
   els.waterIcon.className = 'icon-box ' + state;
   els.leakIcon.className = 'icon-box ' + (leak ? 'critical' : 'safe');
-}
 
+
+ if (ultrasonicError) {
+  setConnection(true, 'Sensor fault');
+
+
+  if (!ultrasonicPopupShown) {
+    alert('⚠ Ultrasonic sensor not responding. Please check sensor wiring.');
+    ultrasonicPopupShown = true;
+  }
+} else {
+  ultrasonicPopupShown = false;
+}
+}
+  
 function updateChart(rows) {
   const validRows = rows.filter(r => Number.isFinite(getWaterLevel(r)));
   chartLabels.length = 0;

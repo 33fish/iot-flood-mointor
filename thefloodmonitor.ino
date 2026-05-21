@@ -18,6 +18,7 @@ const char* SUPABASE_KEY  = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdX
 
 bool  waterDetected    = false;
 bool  ultrasonicActive = false;
+bool ultrasonicError = false;
 float lastDistance     = -1.0f;
 float lastWaterLevel   = -1.0f;
 int   alarmCount       = 0;
@@ -31,9 +32,16 @@ float measureDistance() {
   digitalWrite(PIN_TRIG, LOW);
   long us = pulseIn(PIN_ECHO, HIGH, 25000);
   if (us == 0) {
-    Serial.println("  [Ultrasonic] No echo");
+    Serial.println("  [Ultrasonic ERROR] Sensor not responding!");
+
+    ultrasonicError = true;
+
+    digitalWrite(PIN_LED_RED, HIGH);
+
     return -1.0f;
   }
+
+  ultrasonicError = false;
   return us * 0.0343f / 2.0f;
 }
 
@@ -74,9 +82,11 @@ void postToSupabase(float waterLevel, float distance, bool alarm) {
   http.addHeader("apikey", SUPABASE_KEY);
   http.addHeader("Authorization", String("Bearer ") + SUPABASE_KEY);
 
-  String body = "{\"water_level\":" + String(waterLevel, 1) +
-                ",\"distance\":"    + String(distance, 1) +
-                ",\"alarm\":"       + (alarm ? "true" : "false") + "}";
+String body = "{\"water_level\":" + String(waterLevel, 1) +
+              ",\"distance\":"    + String(distance, 1) +
+              ",\"alarm\":"       + (alarm ? "true" : "false") +
+              ",\"ultrasonic_error\":" + (ultrasonicError ? "true" : "false") +
+              "}";
 
   int code = http.POST(body);
   Serial.printf("[Upload] HTTP %d\n", code);
