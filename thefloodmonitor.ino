@@ -1,231 +1,53 @@
-#include <WiFi.h>
-#include <HTTPClient.h>
+-- ============================================================
+-- Smart Flood Sentinel — Supabase Migration
+-- Run this in Supabase SQL Editor
+-- ============================================================
 
-#define PIN_WATER_TTL  25
-#define PIN_TRIG       13
-#define PIN_ECHO       14
-#define PIN_LED_GREEN   4
-#define PIN_LED_RED    17
-#define PIN_BUZZER     19
+-- 1. Add new columns to readings table
+ALTER TABLE readings
+  ADD COLUMN IF NOT EXISTS state         TEXT,      -- 'safe' | 'warning' | 'critical' | 'sensor_error'
+  ADD COLUMN IF NOT EXISTS rising        BOOLEAN DEFAULT FALSE;
 
-#define CHECK_INTERVAL  3000
-#define INSTALL_HEIGHT  50.0f
+-- 2. Create config table (single-row, id = 1)
+CREATE TABLE IF NOT EXISTS config (
+  id                      INT PRIMARY KEY DEFAULT 1,
+  level_warn              FLOAT   DEFAULT 1.0,    -- cm: yellow alert threshold
+  level_critical          FLOAT   DEFAULT 5.0,    -- cm: red alert threshold
+  install_height          FLOAT   DEFAULT 50.0,   -- cm: written by ESP32 on boot self-test
+  sensor_error_threshold  INT     DEFAULT 3,      -- consecutive failures before sensor_error
+  updated_at              TIMESTAMPTZ DEFAULT NOW()
+);
 
-const char* WIFI_SSID     = "zzhnb666";
-const char* WIFI_PASS     = "zzh666666";
-const char* SUPABASE_URL  = "https://cbmleqcqohvaqelsbwuc.supabase.co/rest/v1/readings";
-const char* SUPABASE_KEY  = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNibWxlcWNxb2h2YXFlbHNid3VjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxNzgwMzYsImV4cCI6MjA5NDc1NDAzNn0.sYdbPsT1w3gocZlW6_pqazdKCbsun2cNStWe9Uiz8cg";
+-- Ensure only one config row ever exists
+INSERT INTO config (id) VALUES (1)
+  ON CONFLICT (id) DO NOTHING;
 
-bool  waterDetected    = false;
-bool  ultrasonicActive = false;
-bool ultrasonicError = false;
-float lastDistance     = -1.0f;
-float lastWaterLevel   = -1.0f;
-int   alarmCount       = 0;
-unsigned long lastCheckTime = 0;
+-- 3. Trigger: auto-update updated_at on config changes
+CREATE OR REPLACE FUNCTION update_config_timestamp()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
 
-float measureDistance() {
-  digitalWrite(PIN_TRIG, LOW);
-  delayMicroseconds(2);
-  digitalWrite(PIN_TRIG, HIGH);
-  delayMicroseconds(10);
-  digitalWrite(PIN_TRIG, LOW);
-  long us = pulseIn(PIN_ECHO, HIGH, 25000);
-  if (us == 0) {
-    Serial.println("  [Ultrasonic ERROR] Sensor not responding!");
+DROP TRIGGER IF EXISTS config_updated_at ON config;
+CREATE TRIGGER config_updated_at
+  BEFORE UPDATE ON config
+  FOR EACH ROW EXECUTE FUNCTION update_config_timestamp();
 
-    ultrasonicError = true;
+-- 4. Enable RLS on config (allow anon read, anon write)
+ALTER TABLE config ENABLE ROW LEVEL SECURITY;
 
-    digitalWrite(PIN_LED_RED, HIGH);
+DROP POLICY IF EXISTS "anon_read_config"  ON config;
+DROP POLICY IF EXISTS "anon_write_config" ON config;
 
-    return -1.0f;
-  }
+CREATE POLICY "anon_read_config"
+  ON config FOR SELECT USING (true);
 
-  ultrasonicError = false;
-  return us * 0.0343f / 2.0f;
-}
+CREATE POLICY "anon_write_config"
+  ON config FOR UPDATE USING (true) WITH CHECK (true);
 
-void beep(int times) {
-  for (int i = 0; i < times; i++) {
-    digitalWrite(PIN_LED_RED, HIGH);
-    digitalWrite(PIN_BUZZER, HIGH);
-    delay(300);
-    digitalWrite(PIN_LED_RED, LOW);
-    digitalWrite(PIN_BUZZER, LOW);
-    if (i < times - 1) delay(200);
-  }
-}
-
-void blinkRed() {
-  static unsigned long t = 0;
-  static bool s = false;
-  if (millis() - t > 400) {
-    t = millis(); s = !s;
-    digitalWrite(PIN_LED_RED, s);
-  }
-}
-
-void blinkGreen() {
-  static unsigned long t = 0;
-  static bool s = false;
-  if (millis() - t > 400) {
-    t = millis(); s = !s;
-    digitalWrite(PIN_LED_GREEN, s);
-  }
-}
-
-void postToSupabase(float waterLevel, float distance, bool alarm) {
-  if (WiFi.status() != WL_CONNECTED) return;
-  HTTPClient http;
-  http.begin(SUPABASE_URL);
-  http.addHeader("Content-Type", "application/json");
-  http.addHeader("apikey", SUPABASE_KEY);
-  http.addHeader("Authorization", String("Bearer ") + SUPABASE_KEY);
-
-String body = "{\"water_level\":" + String(waterLevel, 1) +
-              ",\"distance\":"    + String(distance, 1) +
-              ",\"alarm\":"       + (alarm ? "true" : "false") +
-              ",\"ultrasonic_error\":" + (ultrasonicError ? "true" : "false") +
-              "}";
-
-  int code = http.POST(body);
-  Serial.printf("[Upload] HTTP %d\n", code);
-  http.end();
-}
-
-void connectWiFi() {
-  Serial.printf("[WiFi] Connecting to %s", WIFI_SSID);
-  WiFi.begin(WIFI_SSID, WIFI_PASS);
-  int tries = 0;
-  while (WiFi.status() != WL_CONNECTED && tries < 20) {
-    delay(500);
-    Serial.print(".");
-    tries++;
-  }
-  if (WiFi.status() == WL_CONNECTED) {
-    Serial.printf("\n[WiFi] Connected, IP: %s\n", WiFi.localIP().toString().c_str());
-  } else {
-    Serial.println("\n[WiFi] Failed, running offline");
-  }
-}
-
-void goToSleep() {
-  Serial.println("[Sleep] No water detected, entering deep sleep...");
-  Serial.flush();
-  lastWaterLevel = -1.0f;
-  digitalWrite(PIN_LED_GREEN, HIGH);
-  digitalWrite(PIN_LED_RED,   LOW);
-  esp_sleep_enable_ext0_wakeup((gpio_num_t)PIN_WATER_TTL, HIGH);
-  esp_deep_sleep_start();
-}
-
-void setup() {
-  Serial.begin(115200);
-  delay(500);
-
-  pinMode(PIN_WATER_TTL, INPUT);
-  pinMode(PIN_LED_GREEN,  OUTPUT);
-  pinMode(PIN_LED_RED,    OUTPUT);
-  pinMode(PIN_BUZZER,     OUTPUT);
-  pinMode(PIN_TRIG,       OUTPUT);
-  pinMode(PIN_ECHO,       INPUT);
-
-  digitalWrite(PIN_LED_GREEN, HIGH);
-  digitalWrite(PIN_LED_RED,   LOW);
-  digitalWrite(PIN_BUZZER,    LOW);
-  digitalWrite(PIN_TRIG,      LOW);
-
-  connectWiFi();
-
-  esp_sleep_wakeup_cause_t cause = esp_sleep_get_wakeup_cause();
-  if (cause == ESP_SLEEP_WAKEUP_EXT0) {
-    Serial.println("\n====== Woke up by water sensor! ======");
-    waterDetected    = true;
-    ultrasonicActive = true;
-    lastCheckTime    = millis() - CHECK_INTERVAL;
-    beep(2);
-  } else {
-    Serial.println("\n====== Flood Alert System Starting ======");
-    Serial.println("[Self-test] Green LED on");
-    beep(1);
-    Serial.println("[Self-test] Done");
-
-    bool currentWet = (digitalRead(PIN_WATER_TTL) == HIGH);
-    if (!currentWet) {
-      goToSleep();
-    }
-    lastCheckTime = millis() - CHECK_INTERVAL;
-  }
-
-  Serial.println("=========================================\n");
-}
-
-void loop() {
-  unsigned long now = millis();
-
-  if (now - lastCheckTime >= CHECK_INTERVAL) {
-    lastCheckTime = now;
-
-    bool currentWet = (digitalRead(PIN_WATER_TTL) == HIGH);
-
-    Serial.println("---------- Cycle Check ----------");
-    Serial.printf("[Water] %s\n", currentWet ? "Water detected!" : "Dry");
-
-    if (currentWet && !waterDetected) {
-      waterDetected    = true;
-      ultrasonicActive = true;
-      lastDistance     = -1.0f;
-      lastWaterLevel   = -1.0f;
-      Serial.println("[Alert] Water first detected, starting ultrasonic");
-      postToSupabase(0, 0, false);
-      beep(2);
-    }
-
-    if (!currentWet && waterDetected) {
-      digitalWrite(PIN_LED_RED, LOW);
-      Serial.println("[OK] Water gone, returning to sleep");
-      goToSleep();
-    }
-
-    if (!currentWet && !waterDetected) {
-      goToSleep();
-    }
-
-    if (ultrasonicActive) {
-      float dist = measureDistance();
-      if (dist > 0) {
-        float wl = max(0.0f, INSTALL_HEIGHT - dist);
-        Serial.printf("[Ultrasonic] Distance=%.1f cm  Water level=%.1f cm\n", dist, wl);
-
-        bool alarm = false;
-        if (currentWet) {
-          if (lastWaterLevel < 0.0f) {
-            lastWaterLevel = wl;
-            alarm = true;
-            alarmCount++;
-            Serial.printf("[ALARM] Water detected! Level=%.1f cm (count: %d)\n", wl, alarmCount);
-            beep(2);
-          } else if (wl - lastWaterLevel > 0.0f) {
-            alarm = true;
-            alarmCount++;
-            Serial.printf("[ALARM] Water rising! %.1f cm (count: %d)\n", wl, alarmCount);
-            beep(3);
-            lastWaterLevel = wl;
-          } else {
-            lastWaterLevel = wl;
-          }
-        }
-
-        postToSupabase(wl, dist, alarm);
-        lastDistance = dist;
-      }
-    }
-
-    Serial.println();
-  }
-
-  if (waterDetected) {
-    blinkRed();
-    blinkGreen();
-  }
-}
+-- Done. Verify:
+-- SELECT * FROM config;
+-- SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'readings';
