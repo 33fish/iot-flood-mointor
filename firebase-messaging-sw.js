@@ -1,44 +1,69 @@
-importScripts("https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js");
+self.addEventListener("push", function (event) {
 
-importScripts("https://www.gstatic.com/firebasejs/10.12.5/firebase-messaging-compat.js");
- 
-firebase.initializeApp({
+    let payload = {};
 
-  apiKey: "AIzaSyDBaSsi_F1ij7fyZEpx-ZgIezEVvEeVOBI",
+    try {
 
-  authDomain: "flood-monitoring-system-6fd9b.firebaseapp.com",
+        payload = event.data ? event.data.json() : {};
 
-  projectId: "flood-monitoring-system-6fd9b",
+    } catch (err) {
 
-  storageBucket: "flood-monitoring-system-6fd9b.firebasestorage.app",
+        payload = {
 
-  messagingSenderId: "710760027385",
+            notification: {
 
-  appId: "1:710760027385:web:79820a660f7cebc239be28",
+                title: "Smart Flood Sentinel Alert",
 
-  measurementId: "G-7HHDB6PFKX"
+                body: event.data ? event.data.text() : "Flood alert received."
 
-});
- 
-const messaging = firebase.messaging();
- 
-messaging.onBackgroundMessage((payload) => {
+            }
 
-  console.log("Background message received:", payload);
- 
-  self.registration.showNotification(
-
-    payload.notification?.title || "Smart Flood Sentinel Alert",
-
-    {
-
-      body: payload.notification?.body || "Flood alert received.",
-
-      icon: "/icon.png"
+        };
 
     }
 
-  );
+    const title =
+
+        payload.notification?.title ||
+
+        payload.data?.title ||
+
+        "Smart Flood Sentinel Alert";
+
+    const options = {
+
+        body:
+
+            payload.notification?.body ||
+
+            payload.data?.body ||
+
+            "Flood alert received.",
+
+        icon: "/icon.png",
+
+        badge: "/icon.png",
+
+        data: payload.data || {}
+
+    };
+
+    event.waitUntil(
+
+        self.registration.showNotification(title, options)
+
+    );
 
 });
- 
+
+self.addEventListener("notificationclick", function (event) {
+
+    event.notification.close();
+
+    event.waitUntil(
+
+        clients.openWindow("/")
+
+    );
+
+});
