@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "lib": [
+      "deno.ns",
+      "deno.window",
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
+    "strict": true
+  },
+  "nodeModulesDir": "auto",
+  "lint": {
+    "include": [
+      "supabase/functions"
+    ]
+  },
+  "tasks": {
+    "check:send-alert-email": "deno check supabase/functions/send-alert-email/index.ts"
+  }
+}
