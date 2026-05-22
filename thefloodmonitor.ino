@@ -10,8 +10,8 @@
 #define PIN_BUZZER      19
 
 // ─── Timing ─────────────────────────────────────────────────
-#define CHECK_INTERVAL      3000    // ms between measurement cycles
-#define SENSOR_ECHO_TIMEOUT 25000   // µs, ~4.3 m max range
+#define CHECK_INTERVAL      3000
+#define SENSOR_ECHO_TIMEOUT 25000
 
 // ─── WiFi / Supabase ────────────────────────────────────────
 const char* WIFI_SSID    = "zzhnb666";
@@ -20,10 +20,10 @@ const char* SUPABASE_URL = "https://cbmleqcqohvaqelsbwuc.supabase.co";
 const char* SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNibWxlcWNxb2h2YXFlbHNid3VjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxNzgwMzYsImV4cCI6MjA5NDc1NDAzNn0.sYdbPsT1w3gocZlW6_pqazdKCbsun2cNStWe9Uiz8cg";
 
 // ─── Runtime state ──────────────────────────────────────────
-float    installHeight         = 50.0f;   // loaded from config on boot
-float    levelWarn             = 1.0f;    // loaded from config on boot
-float    levelCritical         = 5.0f;    // loaded from config on boot
-int      sensorErrorThreshold  = 3;       // consecutive misses before error
+float    installHeight         = 25.0f;
+float    levelWarn             = 1.0f;
+float    levelCritical         = 2.0f;
+int      sensorErrorThreshold  = 3;
 
 bool     waterDetected         = false;
 bool     ultrasonicActive      = false;
@@ -46,7 +46,6 @@ void beep(int times, int onMs = 300, int offMs = 200) {
 }
 
 void beepLong() {
-  // Distinct pattern for sensor error: one long 1.2 s tone
   digitalWrite(PIN_LED_RED, HIGH);
   digitalWrite(PIN_BUZZER,  HIGH);
   delay(1200);
@@ -121,13 +120,11 @@ bool supabasePatch(const char* path, const String& json) {
 
 // ─── Config ─────────────────────────────────────────────────
 
-// Minimal JSON float extractor — avoids pulling in ArduinoJson
 float jsonFloat(const String& json, const char* key, float fallback) {
   String search = String("\"") + key + "\":";
   int idx = json.indexOf(search);
   if (idx < 0) return fallback;
   idx += search.length();
-  // skip whitespace/quotes
   while (idx < (int)json.length() && (json[idx] == ' ' || json[idx] == '"')) idx++;
   return json.substring(idx).toFloat();
 }
@@ -144,7 +141,6 @@ void loadConfig() {
     Serial.println("[Config] Failed or empty — using defaults");
     return;
   }
-  // Response is a JSON array: [{ ... }]
   levelWarn            = jsonFloat(body, "level_warn",             levelWarn);
   levelCritical        = jsonFloat(body, "level_critical",         levelCritical);
   installHeight        = jsonFloat(body, "install_height",         installHeight);
@@ -173,18 +169,16 @@ float measureDistance() {
   return us * 0.0343f / 2.0f;
 }
 
-// Take up to 3 samples, return median; returns -1 on full failure
 float measureDistanceStable() {
   float s[3];
   int valid = 0;
   for (int i = 0; i < 3; i++) {
     float d = measureDistance();
     if (d > 0) s[valid++] = d;
-    delay(20);
+    delay(60);
   }
   if (valid == 0) return -1.0f;
   if (valid == 1) return s[0];
-  // simple sort for median
   if (s[0] > s[1]) { float t = s[0]; s[0] = s[1]; s[1] = t; }
   if (valid == 2)  return (s[0] + s[1]) / 2.0f;
   if (s[1] > s[2]) { float t = s[1]; s[1] = s[2]; s[2] = t; }
@@ -195,11 +189,11 @@ float measureDistanceStable() {
 // ─── Readings upload ────────────────────────────────────────
 
 void postReading(float waterLevel, float distance, const char* state, bool rising, bool ultrasonicError) {
-  String json = "{\"water_level\":"    + String(waterLevel, 1)  +
-                ",\"distance\":"       + String(distance, 1)    +
-                ",\"alarm\":"          + (strcmp(state,"safe") != 0 ? "true" : "false") +
-                ",\"state\":\""        + state                  + "\"" +
-                ",\"rising\":"         + (rising ? "true" : "false") +
+  String json = "{\"water_level\":"      + String(waterLevel, 1)  +
+                ",\"distance\":"         + String(distance, 1)    +
+                ",\"alarm\":"            + (strcmp(state,"safe") != 0 ? "true" : "false") +
+                ",\"state\":\""          + state                  + "\"" +
+                ",\"rising\":"           + (rising ? "true" : "false") +
                 ",\"ultrasonic_error\":" + (ultrasonicError ? "true" : "false") +
                 "}";
   bool ok = supabasePost("/rest/v1/readings", json);
@@ -211,21 +205,21 @@ void postReading(float waterLevel, float distance, const char* state, bool risin
 
 void handleSensorError() {
   sensorErrorState = true;
-  Serial.println("[ERROR] Ultrasonic sensor lost — reporting install_height as water level");
+  Serial.println("[ERROR] Ultrasonic sensor lost");
 
-  // Red LED solid, no blinking
+  // Green off — power indicator extinguished on fault
   digitalWrite(PIN_LED_GREEN, LOW);
   digitalWrite(PIN_LED_RED,   HIGH);
   beepLong();
 
-  // Post a sensor_error reading; water_level = installHeight (worst-case)
-  postReading(installHeight, 0.0f, "sensor_error", false, true);
+  float reportLevel = (lastWaterLevel >= 0.0f) ? lastWaterLevel : 0.0f;
+  Serial.printf("[ERROR] Last known water level: %.1f cm\n", reportLevel);
+  postReading(reportLevel, 0.0f, "sensor_error", false, true);
 
   Serial.println("[ERROR] System halted. Power cycle required.");
-  // Halt — infinite loop, red LED stays on
   while (true) {
     delay(5000);
-    beepLong();   // remind every 5 s that attention is needed
+    beepLong();
   }
 }
 
@@ -235,7 +229,7 @@ void goToSleep() {
   Serial.println("[Sleep] Dry — entering deep sleep, wake on water sensor HIGH");
   Serial.flush();
   lastWaterLevel = -1.0f;
-  digitalWrite(PIN_LED_GREEN, HIGH);
+  digitalWrite(PIN_LED_GREEN, HIGH);   // green steady = power on / standby
   digitalWrite(PIN_LED_RED,   LOW);
   esp_sleep_enable_ext0_wakeup((gpio_num_t)PIN_WATER_TTL, HIGH);
   esp_deep_sleep_start();
@@ -246,28 +240,23 @@ void goToSleep() {
 void selfTest() {
   Serial.println("[Self-test] Starting...");
 
-  // Brief LED + buzzer check
-  digitalWrite(PIN_LED_GREEN, HIGH);
-  delay(300);
   digitalWrite(PIN_LED_RED, HIGH);
   delay(300);
   digitalWrite(PIN_LED_RED, LOW);
 
-  // Measure install height
-  Serial.println("[Self-test] Measuring install height...");
+  Serial.println("[Self-test] Measuring install height (3 samples, median)...");
   float dist = measureDistanceStable();
 
   if (dist > 0) {
     installHeight = dist;
-    Serial.printf("[Self-test] Install height measured: %.1f cm\n", installHeight);
+    Serial.printf("[Self-test] Install height: %.1f cm\n", installHeight);
     writeInstallHeight(installHeight);
     beep(1);
   } else {
-    Serial.println("[Self-test] WARNING: Ultrasonic did not return echo — using stored config height");
-    beep(2, 150, 100);   // double short beep = soft warning, not fatal
+    Serial.printf("[Self-test] No echo — using config height: %.1f cm\n", installHeight);
+    beep(2, 150, 100);
   }
 
-  digitalWrite(PIN_LED_GREEN, LOW);
   Serial.println("[Self-test] Done");
 }
 
@@ -284,7 +273,8 @@ void setup() {
   pinMode(PIN_TRIG,       OUTPUT);
   pinMode(PIN_ECHO,       INPUT);
 
-  digitalWrite(PIN_LED_GREEN, LOW);
+  // Green on immediately — power indicator
+  digitalWrite(PIN_LED_GREEN, HIGH);
   digitalWrite(PIN_LED_RED,   LOW);
   digitalWrite(PIN_BUZZER,    LOW);
   digitalWrite(PIN_TRIG,      LOW);
@@ -295,8 +285,8 @@ void setup() {
   esp_sleep_wakeup_cause_t cause = esp_sleep_get_wakeup_cause();
 
   if (cause == ESP_SLEEP_WAKEUP_EXT0) {
-    // Woken by water sensor — skip self-test, jump straight to monitoring
     Serial.println("\n====== Woke up: water detected! ======");
+    digitalWrite(PIN_LED_GREEN, HIGH);   // ensure green stays on after wake
     waterDetected    = true;
     ultrasonicActive = true;
     lastCheckTime    = millis() - CHECK_INTERVAL;
@@ -307,9 +297,8 @@ void setup() {
 
     bool currentWet = (digitalRead(PIN_WATER_TTL) == HIGH);
     if (!currentWet) {
-      goToSleep();   // dry after self-test — sleep immediately
+      goToSleep();
     }
-    // If wet on cold boot, fall through to main loop
     waterDetected    = true;
     ultrasonicActive = true;
     lastCheckTime    = millis() - CHECK_INTERVAL;
@@ -322,9 +311,8 @@ void setup() {
 // ─── Loop ───────────────────────────────────────────────────
 
 void loop() {
-  // Static blink state
-  static unsigned long blinkRedT   = 0, blinkGreenT = 0;
-  static bool          blinkRedS   = false, blinkGreenS = false;
+  static unsigned long blinkRedT = 0;
+  static bool          blinkRedS = false;
 
   unsigned long now = millis();
 
@@ -335,25 +323,22 @@ void loop() {
     Serial.println("---------- Cycle ----------");
     Serial.printf("[Water sensor] %s\n", currentWet ? "WET" : "DRY");
 
-    // ── Dry transitions ──────────────────────────────────────
     if (!currentWet) {
       digitalWrite(PIN_LED_RED, LOW);
       Serial.println("[OK] Water gone — sleeping");
       goToSleep();
     }
 
-    // ── First wet detection ──────────────────────────────────
     if (currentWet && !waterDetected) {
-      waterDetected    = true;
-      ultrasonicActive = true;
-      lastWaterLevel   = -1.0f;
+      waterDetected        = true;
+      ultrasonicActive     = true;
+      lastWaterLevel       = -1.0f;
       consecutiveEchoFails = 0;
       Serial.println("[Alert] Water first detected");
       postReading(0, 0, "warning", false, false);
       beep(2);
     }
 
-    // ── Ultrasonic measurement ───────────────────────────────
     if (ultrasonicActive) {
       float dist = measureDistanceStable();
 
@@ -361,30 +346,27 @@ void loop() {
         consecutiveEchoFails++;
         Serial.printf("[Ultrasonic] No echo (%d/%d)\n", consecutiveEchoFails, sensorErrorThreshold);
         if (consecutiveEchoFails >= sensorErrorThreshold) {
-          handleSensorError();   // does not return
+          handleSensorError();
         }
       } else {
-        consecutiveEchoFails = 0;   // reset on good reading
+        consecutiveEchoFails = 0;
 
         float wl = max(0.0f, installHeight - dist);
         Serial.printf("[Ultrasonic] dist=%.1f cm  level=%.1f cm\n", dist, wl);
 
-        // ── Determine state ──────────────────────────────────
         const char* state;
-        if      (wl >= levelCritical) state = "critical";
+        if      (wl >= levelCritical)           state = "critical";
         else if (wl >= levelWarn || currentWet) state = "warning";
-        else                           state = "safe";
+        else                                    state = "safe";
 
-        // ── Rising detection (ignore sub-0.5 cm noise) ──────
         bool rising = (lastWaterLevel >= 0.0f && (wl - lastWaterLevel) > 0.5f);
 
-        // ── Beep logic ───────────────────────────────────────
         if (strcmp(state, "critical") == 0) {
-          beep(3);             // every critical cycle
+          beep(3);
         } else if (rising) {
-          beep(2);             // rising water
+          beep(2);
         } else if (lastWaterLevel < 0.0f) {
-          beep(2);             // first measurement
+          beep(2);
         }
 
         postReading(wl, dist, state, rising, false);
@@ -395,9 +377,9 @@ void loop() {
     Serial.println();
   }
 
-  // ── LED blink while water present ───────────────────────────
+  // Red blinks as alert indicator while water present and sensor healthy
+  // Green is a steady power indicator — never blinked
   if (waterDetected && !sensorErrorState) {
-    blinkLed(PIN_LED_RED,   blinkRedT,   blinkRedS,   400);
-    blinkLed(PIN_LED_GREEN, blinkGreenT, blinkGreenS, 600);
+    blinkLed(PIN_LED_RED, blinkRedT, blinkRedS, 400);
   }
 }
