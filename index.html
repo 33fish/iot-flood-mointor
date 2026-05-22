@@ -345,14 +345,14 @@
 .notify-btn:hover{background:rgba(79,163,232,.2);border-color:rgba(79,163,232,.75)}
 .notify-btn:active{transform:scale(.97)}
 .notify-btn.enabled{
-  border-color:var(--safe-border);
-  background:var(--safe-dim);
+  border-color:rgba(66, 211, 146, 0.35);
+  background:var(--safe-soft);
   color:var(--safe);
 }
 .notify-btn.fail{
-  border-color:var(--crit-border);
-  background:var(--crit-dim);
-  color:var(--crit);
+  border-color:rgba(255, 107, 99, 0.35);
+  background:var(--critical-soft);
+  color:var(--critical);
 }
 
 
@@ -972,101 +972,14 @@ const firebaseConfig = {
 
 const FIREBASE_VAPID_PUBLIC_KEY = "BMMGhFbPVw6uhdhYC1hqrku19XVd1My0v716n2qFejRPgv56KixDlcbnc0sNWXlu1Y4SB9UEobK7OkccZeqGKWE";
 
-const firebaseApp = initializeApp(firebaseConfig);
-const messaging = getMessaging(firebaseApp);
+function showBanner()      { els.banner.classList.add('show'); }
+function hideBanner()      { els.banner.classList.remove('show'); }
 
-window.enableFirebaseNotifications = async function () {
-  const btn = document.getElementById("notifyBtn");
-
-  try {
-    if (!("Notification" in window)) {
-      alert("This browser does not support notifications.");
-      return;
-    }
-
-    if (!("serviceWorker" in navigator)) {
-      alert("This browser does not support service workers, so Firebase push notifications cannot run.");
-      return;
-    }
-
-    if (btn) {
-      btn.textContent = "Requesting permission...";
-      btn.classList.remove("enabled", "fail");
-    }
-
-    const permission = await Notification.requestPermission();
-
-    if (permission !== "granted") {
-      if (btn) {
-        btn.textContent = "Notifications Blocked";
-        btn.classList.add("fail");
-      }
-      alert("Notification permission was not granted.");
-      return;
-    }
-
-    const registration = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
-
-    const token = await getToken(messaging, {
-      vapidKey: FIREBASE_VAPID_PUBLIC_KEY,
-      serviceWorkerRegistration: registration
-    });
-
-    if (!token) {
-      if (btn) {
-        btn.textContent = "No Token Created";
-        btn.classList.add("fail");
-      }
-      alert("No Firebase token was received. Try again from the deployed HTTPS Vercel link.");
-      return;
-    }
-
-    const saveRes = await fetch(`${SUPABASE_URL}/rest/v1/notification_tokens?on_conflict=token`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "apikey": SUPABASE_KEY,
-        "Authorization": `Bearer ${SUPABASE_KEY}`,
-        "Prefer": "resolution=merge-duplicates"
-      },
-      body: JSON.stringify({
-        token: token,
-        device_name: "Phone Browser"
-      })
-    });
-
-    if (!saveRes.ok) {
-      throw new Error("Could not save token to Supabase. HTTP " + saveRes.status);
-    }
-
-    if (btn) {
-      btn.textContent = "Notifications Enabled";
-      btn.classList.add("enabled");
-    }
-
-    console.log("FCM token saved to Supabase:", token);
-    alert("Phone notifications enabled. Token saved in Supabase.");
-  } catch (err) {
-    console.error("Firebase notification setup failed:", err);
-    if (btn) {
-      btn.textContent = "Notification Setup Failed";
-      btn.classList.add("fail");
-    }
-    alert("Notification setup failed. Check the browser console.");
-  }
-};
-
-onMessage(messaging, (payload) => {
-  console.log("Foreground FCM message:", payload);
-
-  if (payload.notification && Notification.permission === "granted") {
-    new Notification(payload.notification.title || "Smart Flood Sentinel Alert", {
-      body: payload.notification.body || "Flood alert received.",
-      icon: "/icon.png"
-    });
-  }
-});
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
+}
 </script>
-
 </body>
 </html>
