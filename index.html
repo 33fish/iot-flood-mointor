@@ -325,6 +325,37 @@
   }
   @keyframes shimmer { 100% { transform: translateX(100%); } }
 
+/* ── Firebase notification button ── */
+.notify-btn{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:6px 11px;
+  border:1px solid var(--blue);
+  border-radius:999px;
+  background:rgba(79,163,232,.12);
+  color:var(--blue);
+  font-family:"IBM Plex Mono",monospace;
+  font-size:10px;
+  font-weight:700;
+  cursor:pointer;
+  white-space:nowrap;
+  transition:background .15s, transform .1s, border-color .15s;
+}
+.notify-btn:hover{background:rgba(79,163,232,.2);border-color:rgba(79,163,232,.75)}
+.notify-btn:active{transform:scale(.97)}
+.notify-btn.enabled{
+  border-color:rgba(66, 211, 146, 0.35);
+  background:var(--safe-soft);
+  color:var(--safe);
+}
+.notify-btn.fail{
+  border-color:rgba(255, 107, 99, 0.35);
+  background:var(--critical-soft);
+  color:var(--critical);
+}
+
+
   @media (max-width: 940px) {
     .layout { grid-template-columns: 1fr; }
     .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -366,6 +397,7 @@
       <span class="chip" id="nodeChip">Node: live feed</span>
       <span class="chip" id="connectionChip"><span class="dot"></span> Connecting</span>
       <span class="chip" id="lastUpdatedChip">Last update: pending</span>
+      <button class="notify-btn" id="notifyBtn" type="button" onclick="enableFirebaseNotifications()">Enable Phone Notifications</button>
     </div>
   </header>
 
@@ -910,6 +942,35 @@ function setConnection(ok, text) {
   els.connectionChip.innerHTML = '<span class="dot"></span> ' + (text || (ok ? 'Connected' : 'Offline'));
   els.connectionChip.style.color = ok ? 'var(--safe)' : 'var(--critical)';
 }
+
+function showBanner()      { els.banner.classList.add('show'); }
+function hideBanner()      { els.banner.classList.remove('show'); }
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
+}
+</script>
+<script type="module">
+// ─── Firebase phone/browser notifications ─────────────────────
+// This script asks for notification permission, creates an FCM token,
+// and saves that token in Supabase notification_tokens.
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-messaging.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDBaSsi_F1ij7fyZEpx-ZgIezEVvEeVOBI",
+  authDomain: "flood-monitoring-system-6fd9b.firebaseapp.com",
+  projectId: "flood-monitoring-system-6fd9b",
+  storageBucket: "flood-monitoring-system-6fd9b.firebasestorage.app",
+  messagingSenderId: "710760027385",
+  appId: "1:710760027385:web:79820a660f7cebc239be28",
+  measurementId: "G-7HHDB6PFKX"
+};
+
+const FIREBASE_VAPID_PUBLIC_KEY = "BMMGhFbPVw6uhdhYC1hqrku19XVd1My0v716n2qFejRPgv56KixDlcbnc0sNWXlu1Y4SB9UEobK7OkccZeqGKWE";
 
 function showBanner()      { els.banner.classList.add('show'); }
 function hideBanner()      { els.banner.classList.remove('show'); }
