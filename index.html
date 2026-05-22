@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -352,9 +353,7 @@
     font-weight: 700;
   }
 
-  .section {
-    margin-top: 12px;
-  }
+  .section { margin-top: 12px; }
 
   aside .section {
     margin-top: 0;
@@ -393,12 +392,9 @@
     transform: scale(1.03);
   }
 
-  .icon-box.safe,
-  .alert-icon.safe { background: var(--safe-soft); color: var(--safe); }
-  .icon-box.warning,
-  .alert-icon.warning { background: var(--warning-soft); color: var(--warning); }
-  .icon-box.critical,
-  .alert-icon.critical { background: var(--critical-soft); color: var(--critical); }
+  .icon-box.safe,  .alert-icon.safe     { background: var(--safe-soft);     color: var(--safe);     }
+  .icon-box.warning, .alert-icon.warning { background: var(--warning-soft);  color: var(--warning);  }
+  .icon-box.critical, .alert-icon.critical { background: var(--critical-soft); color: var(--critical); }
 
   h2 {
     margin: 0;
@@ -441,17 +437,39 @@
   .chart-wrap.empty canvas { opacity: 0; }
   .chart-wrap.empty .chart-empty { display: grid; }
 
-  .control-row {
+  .threshold-grid {
     display: grid;
-    grid-template-columns: 1fr auto;
+    grid-template-columns: 1fr 1fr;
     gap: 10px;
-    align-items: center;
+    margin-top: 4px;
   }
 
-  input[type=range] {
-    width: 100%;
-    accent-color: var(--blue);
+  .threshold-item .label { margin-bottom: 6px; }
+
+  .threshold-input-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
+
+  input[type=number] {
+    width: 80px;
+    padding: 6px 10px;
+    background: var(--surface-soft);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    outline: none;
+    transition: border-color 160ms ease;
+  }
+
+  input[type=number]:focus { border-color: var(--blue); }
+
+  input[type=number]::-webkit-inner-spin-button,
+  input[type=number]::-webkit-outer-spin-button { opacity: 1; }
 
   .alerts-list {
     display: grid;
@@ -479,10 +497,7 @@
     transition: transform 160ms ease, border-color 160ms ease, background-color 160ms ease;
   }
 
-  .alert-item:hover {
-    transform: translateX(2px);
-    border-color: var(--border-strong);
-  }
+  .alert-item:hover { transform: translateX(2px); border-color: var(--border-strong); }
 
   .alert-item.critical {
     border-left-color: var(--critical);
@@ -554,47 +569,27 @@
     animation: shimmer 1.2s infinite;
   }
 
-  @keyframes shimmer {
-    100% { transform: translateX(100%); }
-  }
+  @keyframes shimmer { 100% { transform: translateX(100%); } }
 
   @media (max-width: 940px) {
     .layout { grid-template-columns: 1fr; }
     .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    aside {
-      max-height: none;
-    }
-    .alerts-list {
-      max-height: 360px;
-    }
+    aside { max-height: none; }
+    .alerts-list { max-height: 360px; }
   }
 
   @media (max-width: 720px) {
-    .shell {
-      width: min(100% - 20px, 1180px);
-      padding-top: 14px;
-    }
-
-    .topbar,
-    .status-head {
-      align-items: flex-start;
-      flex-direction: column;
-    }
-
-    .top-actions {
-      justify-content: flex-start;
-      width: 100%;
-    }
-
+    .shell { width: min(100% - 20px, 1180px); padding-top: 14px; }
+    .topbar, .status-head { align-items: flex-start; flex-direction: column; }
+    .top-actions { justify-content: flex-start; width: 100%; }
     .summary-grid { grid-template-columns: 1fr; }
     .card-pad { padding: 14px; }
     .chart-wrap { height: 240px; }
+    .threshold-grid { grid-template-columns: 1fr; }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
+    *, *::before, *::after {
       animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
       scroll-behavior: auto !important;
@@ -634,7 +629,6 @@
             <p class="status-copy" id="statusCopy">Fetching the latest ESP32 flood monitoring telemetry.</p>
           </div>
         </div>
-
         <div class="summary-grid">
           <div class="summary-item">
             <p class="label">Current Water Level</p>
@@ -674,28 +668,40 @@
         </div>
         <div class="chart-wrap empty" id="chartWrap">
           <canvas id="wlChart" role="img" aria-label="Water level over time line chart"></canvas>
-          <div class="chart-empty" id="chartEmpty">No trend data yet. Readings will appear here once telemetry is available.</div>
+          <div class="chart-empty">No trend data yet. Readings will appear here once telemetry is available.</div>
         </div>
       </section>
 
       <section class="section card card-pad">
         <div class="section-header">
           <div class="section-title">
-            <div class="icon-box" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><path d="M12 20V10"></path><path d="M18 20V4"></path><path d="M6 20v-4"></path></svg>
+            <div class="icon-box warning" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M10.3 4.3 2.8 17a2 2 0 0 0 1.7 3h15a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>
             </div>
             <div>
-              <h2>Sensor Setup</h2>
-              <p class="section-note">Keep the existing install-height calculation available</p>
+              <h2>Alert Thresholds</h2>
+              <p class="section-note">Adjust water level thresholds for warning and critical alerts</p>
             </div>
           </div>
-          <span class="badge" id="heightBadge">50 cm</span>
         </div>
-        <div class="control-row">
-          <input type="range" min="10" max="300" value="50" step="1" id="heightSlider" aria-label="Sensor height in centimeters">
-          <strong id="heightVal">50 cm</strong>
+        <div class="threshold-grid">
+          <div class="threshold-item">
+            <p class="label" style="color:var(--warning);">Warning threshold</p>
+            <div class="threshold-input-row">
+              <input type="number" min="0.1" max="49.9" step="0.1" id="warnInput" value="1.0" aria-label="Warning threshold in centimeters">
+              <span style="color:var(--muted);font-size:13px;font-weight:700;">cm</span>
+            </div>
+            <p class="subtext">Leak detected above this level triggers a warning</p>
+          </div>
+          <div class="threshold-item">
+            <p class="label" style="color:var(--critical);">Critical threshold</p>
+            <div class="threshold-input-row">
+              <input type="number" min="0.2" max="50" step="0.1" id="critInput" value="2.0" aria-label="Critical threshold in centimeters">
+              <span style="color:var(--muted);font-size:13px;font-weight:700;">cm</span>
+            </div>
+            <p class="subtext">Water level above this triggers a critical alert</p>
+          </div>
         </div>
-        <p class="subtext">Water level is calculated as install height minus measured distance when distance data is available.</p>
       </section>
     </div>
 
@@ -712,7 +718,6 @@
             </div>
           </div>
         </div>
-
         <div class="telemetry-grid">
           <div class="metric-card">
             <div class="metric-row">
@@ -797,52 +802,54 @@
 <script>
 const SUPABASE_URL = 'https://cbmleqcqohvaqelsbwuc.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNibWxlcWNxb2h2YXFlbHNid3VjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxNzgwMzYsImV4cCI6MjA5NDc1NDAzNn0.sYdbPsT1w3gocZlW6_pqazdKCbsun2cNStWe9Uiz8cg';
-const TABLE_NAME = 'readings';
-const POLL_INTERVAL = 5000;
+const TABLE_NAME   = 'readings';
+const POLL_INTERVAL   = 5000;
 const OFFLINE_AFTER_MS = 30000;
 
-let installHeight = 50;
-let startTime = new Date();
-let chart = null;
+let installHeight  = null;
+let heightFromDB   = false;
+let warnThreshold  = 1.0;
+let critThreshold  = 2.0;
+let startTime      = new Date();
+let chart          = null;
 
 const chartLabels = [];
-const chartData = [];
+const chartData   = [];
 
 const els = {
-  banner: document.getElementById('banner'),
-  connectionChip: document.getElementById('connectionChip'),
-  nodeChip: document.getElementById('nodeChip'),
-  lastUpdatedChip: document.getElementById('lastUpdatedChip'),
-  statusCard: document.getElementById('statusCard'),
-  statusBadge: document.getElementById('statusBadge'),
-  statusTitle: document.getElementById('statusTitle'),
-  statusCopy: document.getElementById('statusCopy'),
-  summaryWater: document.getElementById('summaryWater'),
-  summaryWaterSub: document.getElementById('summaryWaterSub'),
-  summaryLeak: document.getElementById('summaryLeak'),
-  summaryLeakSub: document.getElementById('summaryLeakSub'),
-  summaryUpdated: document.getElementById('summaryUpdated'),
-  summaryUpdatedSub: document.getElementById('summaryUpdatedSub'),
-  summaryDevice: document.getElementById('summaryDevice'),
+  banner:           document.getElementById('banner'),
+  connectionChip:   document.getElementById('connectionChip'),
+  nodeChip:         document.getElementById('nodeChip'),
+  lastUpdatedChip:  document.getElementById('lastUpdatedChip'),
+  statusCard:       document.getElementById('statusCard'),
+  statusBadge:      document.getElementById('statusBadge'),
+  statusTitle:      document.getElementById('statusTitle'),
+  statusCopy:       document.getElementById('statusCopy'),
+  summaryWater:     document.getElementById('summaryWater'),
+  summaryWaterSub:  document.getElementById('summaryWaterSub'),
+  summaryLeak:      document.getElementById('summaryLeak'),
+  summaryLeakSub:   document.getElementById('summaryLeakSub'),
+  summaryUpdated:   document.getElementById('summaryUpdated'),
+  summaryUpdatedSub:document.getElementById('summaryUpdatedSub'),
+  summaryDevice:    document.getElementById('summaryDevice'),
   summaryDeviceSub: document.getElementById('summaryDeviceSub'),
-  mWater: document.getElementById('mWater'),
-  mWaterSub: document.getElementById('mWaterSub'),
-  mLeak: document.getElementById('mLeak'),
-  mLeakSub: document.getElementById('mLeakSub'),
-  mDist: document.getElementById('mDist'),
-  mDistSub: document.getElementById('mDistSub'),
-  mAlarms: document.getElementById('mAlarms'),
-  mAlarmSub: document.getElementById('mAlarmSub'),
-  waterIcon: document.getElementById('waterIcon'),
-  leakIcon: document.getElementById('leakIcon'),
-  logList: document.getElementById('logList'),
-  logCount: document.getElementById('logCount'),
-  historyCount: document.getElementById('historyCount'),
-  chartWrap: document.getElementById('chartWrap'),
-  heightSlider: document.getElementById('heightSlider'),
-  heightVal: document.getElementById('heightVal'),
-  heightBadge: document.getElementById('heightBadge'),
-  footerUptime: document.getElementById('footerUptime')
+  mWater:           document.getElementById('mWater'),
+  mWaterSub:        document.getElementById('mWaterSub'),
+  mLeak:            document.getElementById('mLeak'),
+  mLeakSub:         document.getElementById('mLeakSub'),
+  mDist:            document.getElementById('mDist'),
+  mDistSub:         document.getElementById('mDistSub'),
+  mAlarms:          document.getElementById('mAlarms'),
+  mAlarmSub:        document.getElementById('mAlarmSub'),
+  waterIcon:        document.getElementById('waterIcon'),
+  leakIcon:         document.getElementById('leakIcon'),
+  logList:          document.getElementById('logList'),
+  logCount:         document.getElementById('logCount'),
+  historyCount:     document.getElementById('historyCount'),
+  chartWrap:        document.getElementById('chartWrap'),
+  warnInput:        document.getElementById('warnInput'),
+  critInput:        document.getElementById('critInput'),
+  footerUptime:     document.getElementById('footerUptime')
 };
 
 initChart();
@@ -850,41 +857,64 @@ fetchLatest();
 setInterval(fetchLatest, POLL_INTERVAL);
 setInterval(updateUptime, 60000);
 
-els.heightSlider.addEventListener('input', function() {
-  installHeight = parseInt(this.value, 10);
-  els.heightVal.textContent = installHeight + ' cm';
-  els.heightBadge.textContent = installHeight + ' cm';
+els.warnInput.addEventListener('change', function () {
+  let v = parseFloat(this.value);
+  if (isNaN(v) || v < 0.1) v = 0.1;
+  if (v >= critThreshold) v = Math.round((critThreshold - 0.1) * 10) / 10;
+  v = Math.round(v * 10) / 10;
+  this.value = v.toFixed(1);
+  warnThreshold = v;
 });
+
+els.critInput.addEventListener('change', function () {
+  let v = parseFloat(this.value);
+  if (isNaN(v) || v < 0.2) v = 0.2;
+  if (v > 50) v = 50;
+  if (v <= warnThreshold) v = Math.round((warnThreshold + 0.1) * 10) / 10;
+  v = Math.round(v * 10) / 10;
+  this.value = v.toFixed(1);
+  critThreshold = v;
+});
+
+function trySetHeightFromDB(rows) {
+  if (heightFromDB) return;
+  const sorted = rows.slice().sort((a, b) => new Date(getRowTimeRaw(a)) - new Date(getRowTimeRaw(b)));
+  for (const row of sorted) {
+    const h = Number(row.install_height ?? row.sensor_height ?? row.height);
+    if (Number.isFinite(h) && h > 0) {
+      installHeight = h;
+      heightFromDB  = true;
+      return;
+    }
+  }
+  for (const row of sorted) {
+    const d = Number(row.distance ?? row.distance_cm);
+    if (Number.isFinite(d) && d > 0) {
+      installHeight = d;
+      heightFromDB  = true;
+      return;
+    }
+  }
+}
 
 async function fetchLatest() {
   try {
     const res = await fetch(
       SUPABASE_URL + '/rest/v1/' + TABLE_NAME + '?select=*&order=created_at.desc&limit=30',
-      {
-        headers: {
-          'apikey': SUPABASE_KEY,
-          'Authorization': 'Bearer ' + SUPABASE_KEY
-        }
-      }
+      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY } }
     );
-
     if (!res.ok) throw new Error('Request failed');
-
     const data = await res.json();
     hideBanner();
     setConnection(true);
-
-    if (!data || data.length === 0) {
-      renderEmpty();
-      return;
-    }
-
+    if (!data || data.length === 0) { renderEmpty(); return; }
+    trySetHeightFromDB(data);
     const latest = data[0];
     updateMetrics(latest);
     updateChart(data.slice().reverse());
     renderAlerts(data);
     checkAlarms(data);
-  } catch(e) {
+  } catch (e) {
     showBanner();
     setConnection(false);
   }
@@ -902,11 +932,11 @@ function renderEmpty() {
 }
 
 function updateMetrics(row) {
-  const wl = getWaterLevel(row);
-  const dist = getDistance(row);
-  const leak = getLeakDetected(row);
-  const state = getState(row, wl, leak);
-  const time = getRowTime(row);
+  const wl     = getWaterLevel(row);
+  const dist   = getDistance(row);
+  const leak   = getLeakDetected(row);
+  const state  = getState(row, wl, leak);
+  const time   = getRowTime(row);
   const online = Date.now() - time.getTime() <= OFFLINE_AFTER_MS;
   const nodeId = row.node_id || row.device_id || 'node-01';
 
@@ -920,7 +950,7 @@ function updateMetrics(row) {
   setConnection(online, online ? 'Live' : 'Stale data');
 
   els.summaryWater.innerHTML = formatLevel(wl) + '<span class="unit">cm</span>';
-  els.summaryWaterSub.textContent = waterLevelText(wl);
+  els.summaryWaterSub.textContent = waterLevelText(wl, leak);
   els.summaryLeak.textContent = leak ? 'Detected' : 'Clear';
   els.summaryLeakSub.textContent = leak ? 'Water contact sensor is active' : 'No leak contact reported';
   els.summaryUpdated.textContent = fmtTime(time);
@@ -929,54 +959,44 @@ function updateMetrics(row) {
   els.summaryDeviceSub.textContent = online ? 'Recent telemetry received' : 'No fresh reading in 30 seconds';
 
   els.mWater.innerHTML = formatLevel(wl) + '<span class="unit">cm</span>';
-  els.mWaterSub.textContent = waterLevelText(wl);
+  els.mWaterSub.textContent = waterLevelText(wl, leak);
   els.mLeak.textContent = leak ? 'Detected' : 'Clear';
   els.mLeakSub.textContent = leak ? 'Leak sensor has triggered' : 'Leak sensor is clear';
   els.mDist.innerHTML = formatLevel(dist) + '<span class="unit">cm</span>';
   els.mDistSub.textContent = Number.isFinite(dist) ? 'Measured by ultrasonic sensor' : 'Distance not included in reading';
   els.waterIcon.className = 'icon-box ' + state;
-  els.leakIcon.className = 'icon-box ' + (leak ? 'critical' : 'safe');
+  els.leakIcon.className  = 'icon-box ' + (leak ? 'critical' : 'safe');
 }
 
 function updateChart(rows) {
   const validRows = rows.filter(r => Number.isFinite(getWaterLevel(r)));
   chartLabels.length = 0;
-  chartData.length = 0;
-
+  chartData.length   = 0;
   validRows.forEach(r => {
     chartLabels.push(fmtTime(getRowTime(r)));
     chartData.push(roundLevel(getWaterLevel(r)));
   });
-
   els.historyCount.textContent = validRows.length + ' readings';
   els.chartWrap.classList.toggle('empty', validRows.length === 0);
   chart.data.datasets[0].pointBackgroundColor = validRows.map(r => stateColor(getState(r, getWaterLevel(r), getLeakDetected(r))));
-  chart.data.datasets[0].pointBorderColor = validRows.map(r => stateColor(getState(r, getWaterLevel(r), getLeakDetected(r))));
+  chart.data.datasets[0].pointBorderColor     = validRows.map(r => stateColor(getState(r, getWaterLevel(r), getLeakDetected(r))));
   chart.update();
 }
 
 function renderAlerts(rows) {
   const alerts = rows.filter(r => getState(r, getWaterLevel(r), getLeakDetected(r)) !== 'safe');
-
   els.logCount.textContent = alerts.length + ' events';
-
   if (!alerts.length) {
     els.logList.innerHTML = '<div class="empty-state">No alert events yet. Warning and critical events will appear here automatically.</div>';
     return;
   }
-
   els.logList.innerHTML = alerts.map(row => {
-    const wl = getWaterLevel(row);
-    const leak = getLeakDetected(row);
+    const wl    = getWaterLevel(row);
+    const leak  = getLeakDetected(row);
     const state = getState(row, wl, leak);
-    const message = leak && state === 'critical'
-      ? 'Leak detected with critical water level'
-      : leak
-        ? 'Leak sensor triggered'
-        : state === 'critical'
-          ? 'Critical water level threshold exceeded'
-          : 'Water level warning threshold exceeded';
-
+    const message = state === 'critical'
+      ? 'Water level exceeded critical threshold (' + critThreshold.toFixed(1) + ' cm)'
+      : 'Leak detected above warning threshold (' + warnThreshold.toFixed(1) + ' cm)';
     return `
       <article class="alert-item ${state}">
         <div class="alert-icon ${state}" aria-hidden="true">
@@ -995,20 +1015,17 @@ function renderAlerts(rows) {
             <span class="badge ${state}">${escapeHtml(stateLabel(state))}</span>
           </div>
         </div>
-      </article>
-    `;
+      </article>`;
   }).join('');
 }
 
 function checkAlarms(rows) {
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
-
   const todayAlarms = rows.filter(r => {
     const state = getState(r, getWaterLevel(r), getLeakDetected(r));
     return state !== 'safe' && getRowTime(r) > todayStart;
   });
-
   els.mAlarms.innerHTML = todayAlarms.length + '<span class="unit">events</span>';
 }
 
@@ -1036,7 +1053,7 @@ function initChart() {
       interaction: { mode: 'index', intersect: false },
       plugins: {
         legend: { display: false },
-        tooltip: { callbacks: { label: context => 'Water level: ' + context.parsed.y + ' cm' } }
+        tooltip: { callbacks: { label: ctx => 'Water level: ' + ctx.parsed.y + ' cm' } }
       },
       scales: {
         x: {
@@ -1046,7 +1063,7 @@ function initChart() {
         },
         y: {
           beginAtZero: true,
-          suggestedMax: 12,
+          suggestedMax: 5,
           ticks: { color: '#9aa9bb', callback: v => v + ' cm', font: { family: 'Inter', size: 11, weight: '600' } },
           grid: { color: 'rgba(148,163,184,0.14)' },
           border: { color: 'rgba(148,163,184,0.22)' }
@@ -1059,9 +1076,10 @@ function initChart() {
 function getWaterLevel(row) {
   const direct = Number(row.water_level ?? row.water_level_cm ?? row.level_cm);
   if (Number.isFinite(direct)) return direct;
-
-  const distance = getDistance(row);
-  if (Number.isFinite(distance)) return Math.max(installHeight - distance, 0);
+  if (installHeight !== null) {
+    const distance = getDistance(row);
+    if (Number.isFinite(distance)) return Math.max(installHeight - distance, 0);
+  }
   return NaN;
 }
 
@@ -1080,16 +1098,18 @@ function getState(row, waterLevel, leakDetected) {
   if (explicit.includes('critical')) return 'critical';
   if (explicit.includes('warning') || explicit.includes('warn')) return 'warning';
   if (explicit.includes('safe') || explicit.includes('normal')) return 'safe';
-
-  if (leakDetected && waterLevel >= 10) return 'critical';
-  if (waterLevel >= 10) return 'critical';
-  if (leakDetected || waterLevel >= 5 || row.alarm === true) return 'warning';
+  if (Number.isFinite(waterLevel) && waterLevel >= critThreshold) return 'critical';
+  if (leakDetected && Number.isFinite(waterLevel) && waterLevel >= warnThreshold) return 'warning';
+  if (leakDetected) return 'warning';
   return 'safe';
 }
 
+function getRowTimeRaw(row) {
+  return row.created_at ?? row.ts ?? row.timestamp ?? row.time;
+}
+
 function getRowTime(row) {
-  const value = row.created_at ?? row.ts ?? row.timestamp ?? row.time;
-  const parsed = new Date(value);
+  const parsed = new Date(getRowTimeRaw(row));
   return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
 }
 
@@ -1102,15 +1122,16 @@ function stateColor(state) {
 }
 
 function statusCopy(state) {
-  if (state === 'critical') return 'Critical flood risk is active. Immediate attention is recommended.';
-  if (state === 'warning') return 'A warning condition is active. Check the sensor area and continue monitoring.';
-  return 'No leak is detected and the water level is within the safe range.';
+  if (state === 'critical') return 'Water level has exceeded ' + critThreshold.toFixed(1) + ' cm. Immediate attention is recommended.';
+  if (state === 'warning')  return 'Leak detected above ' + warnThreshold.toFixed(1) + ' cm. Monitor the situation closely.';
+  return 'No leak detected and water level is within the safe range.';
 }
 
-function waterLevelText(value) {
+function waterLevelText(value, leak) {
   if (!Number.isFinite(value)) return 'Sensor reading unavailable';
-  if (value >= 10) return 'Critical flood threshold exceeded';
-  if (value >= 5) return 'Above warning threshold';
+  if (value >= critThreshold) return 'Critical threshold exceeded (>= ' + critThreshold.toFixed(1) + ' cm)';
+  if (leak && value >= warnThreshold) return 'Leak detected above warning level (' + warnThreshold.toFixed(1) + ' cm)';
+  if (leak) return 'Leak detected, level within warning range';
   return 'Within safe range';
 }
 
@@ -1158,3 +1179,4 @@ function escapeHtml(value) {
 </script>
 </body>
 </html>
+```
