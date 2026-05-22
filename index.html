@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -27,6 +26,8 @@
     --warning-soft: rgba(245, 196, 81, 0.16);
     --critical: #ff6b63;
     --critical-soft: rgba(255, 107, 99, 0.16);
+    --sensor-error: #c084fc;
+    --sensor-error-soft: rgba(192, 132, 252, 0.16);
     --shadow: 0 22px 55px rgba(0, 0, 0, 0.32);
     --radius: 8px;
   }
@@ -67,16 +68,8 @@
     animation: pageIn 420ms ease-out both;
   }
 
-  .topbar,
-  .brand,
-  .top-actions,
-  .section-header,
-  .section-title,
-  .alert-top,
-  .metric-row,
-  .footer {
-    display: flex;
-  }
+  .topbar, .brand, .top-actions, .section-header,
+  .section-title, .alert-top, .metric-row, .footer { display: flex; }
 
   .topbar {
     align-items: center;
@@ -85,15 +78,9 @@
     margin-bottom: 12px;
   }
 
-  .brand {
-    align-items: center;
-    gap: 12px;
-    min-width: 0;
-  }
+  .brand { align-items: center; gap: 12px; min-width: 0; }
 
-  .brand-mark,
-  .icon-box,
-  .alert-icon {
+  .brand-mark, .icon-box, .alert-icon {
     display: grid;
     place-items: center;
     flex: 0 0 auto;
@@ -101,112 +88,82 @@
   }
 
   .brand-mark {
-    width: 38px;
-    height: 38px;
-    background: #0f527d;
-    color: #fff;
+    width: 38px; height: 38px;
+    background: #0f527d; color: #fff;
     box-shadow: 0 10px 24px rgba(15, 82, 125, 0.22);
   }
 
   svg {
-    width: 18px;
-    height: 18px;
-    stroke: currentColor;
-    fill: none;
-    stroke-width: 2;
-    stroke-linecap: round;
-    stroke-linejoin: round;
+    width: 18px; height: 18px;
+    stroke: currentColor; fill: none;
+    stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
   }
 
   .eyebrow {
-    margin: 0;
-    color: var(--muted);
-    font-size: 11px;
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+    margin: 0; color: var(--muted);
+    font-size: 11px; font-weight: 800;
+    letter-spacing: 0.08em; text-transform: uppercase;
   }
 
   h1 {
     margin: 1px 0 0;
     font-size: clamp(22px, 2.4vw, 30px);
-    line-height: 1.05;
-    letter-spacing: 0;
+    line-height: 1.05; letter-spacing: 0;
   }
 
   .top-actions {
-    align-items: center;
-    justify-content: flex-end;
-    flex-wrap: wrap;
-    gap: 10px;
+    align-items: center; justify-content: flex-end;
+    flex-wrap: wrap; gap: 10px;
   }
 
-  .chip,
-  .badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    min-height: 28px;
-    padding: 5px 9px;
-    border: 1px solid var(--border);
-    border-radius: 999px;
+  .chip, .badge {
+    display: inline-flex; align-items: center; gap: 7px;
+    min-height: 28px; padding: 5px 9px;
+    border: 1px solid var(--border); border-radius: 999px;
     background: rgba(17, 24, 39, 0.78);
-    color: var(--muted);
-    font-size: 11px;
-    font-weight: 800;
-    white-space: nowrap;
+    color: var(--muted); font-size: 11px; font-weight: 800; white-space: nowrap;
   }
 
   .dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 99px;
+    width: 8px; height: 8px; border-radius: 99px;
     background: currentColor;
     box-shadow: 0 0 0 4px color-mix(in srgb, currentColor 14%, transparent);
     animation: softPulse 2.4s ease-in-out infinite;
   }
 
   .banner {
-    display: none;
-    margin-bottom: 10px;
-    padding: 10px 12px;
-    border: 1px solid rgba(196, 60, 52, 0.28);
-    border-radius: var(--radius);
-    background: var(--critical-soft);
-    color: var(--critical);
-    font-weight: 800;
+    display: none; margin-bottom: 10px; padding: 10px 12px;
+    border: 1px solid rgba(196, 60, 52, 0.28); border-radius: var(--radius);
+    background: var(--critical-soft); color: var(--critical); font-weight: 800;
   }
-
   .banner.show { display: block; }
+
+  .sensor-error-banner {
+    display: none; margin-bottom: 10px; padding: 10px 12px;
+    border: 1px solid rgba(192, 132, 252, 0.28); border-radius: var(--radius);
+    background: var(--sensor-error-soft); color: var(--sensor-error); font-weight: 800;
+  }
+  .sensor-error-banner.show { display: block; }
 
   .layout {
     display: grid;
     grid-template-columns: minmax(0, 1.05fr) minmax(420px, 0.95fr);
-    gap: 12px;
-    align-items: start;
+    gap: 12px; align-items: start;
   }
 
   aside {
-    display: grid;
-    grid-template-rows: auto minmax(0, 1fr);
-    gap: 12px;
-    max-height: calc(100vh - 92px);
-    min-height: 0;
+    display: grid; grid-template-rows: auto minmax(0, 1fr);
+    gap: 12px; max-height: calc(100vh - 92px); min-height: 0;
   }
 
   .card {
     background: rgba(17, 24, 39, 0.92);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
+    border: 1px solid var(--border); border-radius: var(--radius);
     box-shadow: var(--shadow);
     transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
   }
 
-  .layout > div > .card,
-  aside > .card {
-    animation: pageIn 420ms ease-out both;
-  }
-
+  .layout > div > .card, aside > .card { animation: pageIn 420ms ease-out both; }
   .layout > div > .card:nth-child(1) { animation-delay: 30ms; }
   .layout > div > .card:nth-child(2) { animation-delay: 70ms; }
   .layout > div > .card:nth-child(3) { animation-delay: 110ms; }
@@ -214,361 +171,158 @@
   aside > .card:nth-child(2) { animation-delay: 120ms; }
 
   .card:hover {
-    transform: translateY(-2px);
-    border-color: var(--border-strong);
+    transform: translateY(-2px); border-color: var(--border-strong);
     box-shadow: 0 24px 58px rgba(0, 0, 0, 0.38);
   }
 
   .card-pad { padding: 12px; }
 
-  .status-card {
-    position: relative;
-    min-height: 210px;
-    overflow: hidden;
-  }
-
-  .status-card.safe {
-    background: linear-gradient(145deg, rgba(17, 24, 39, 0.94), rgba(66, 211, 146, 0.06));
-  }
-
-  .status-card.warning {
-    background: linear-gradient(145deg, rgba(17, 24, 39, 0.94), rgba(245, 196, 81, 0.08));
-  }
-
-  .status-card.critical {
-    background: linear-gradient(145deg, rgba(17, 24, 39, 0.94), rgba(255, 107, 99, 0.1));
-  }
+  .status-card { position: relative; min-height: 210px; overflow: hidden; }
+  .status-card.safe     { background: linear-gradient(145deg, rgba(17,24,39,0.94), rgba(66,211,146,0.06)); }
+  .status-card.warning  { background: linear-gradient(145deg, rgba(17,24,39,0.94), rgba(245,196,81,0.08)); }
+  .status-card.critical { background: linear-gradient(145deg, rgba(17,24,39,0.94), rgba(255,107,99,0.1)); }
+  .status-card.sensor-error { background: linear-gradient(145deg, rgba(17,24,39,0.94), rgba(192,132,252,0.1)); }
 
   .status-card::before {
-    content: "";
-    position: absolute;
-    inset: 0 0 auto;
-    height: 4px;
-    background: var(--faint);
+    content: ""; position: absolute; inset: 0 0 auto;
+    height: 4px; background: var(--faint);
   }
+  .status-card.safe::before         { background: var(--safe); }
+  .status-card.warning::before      { background: var(--warning); }
+  .status-card.critical::before     { background: var(--critical); }
+  .status-card.sensor-error::before { background: var(--sensor-error); }
 
-  .status-card.safe::before { background: var(--safe); }
-  .status-card.warning::before { background: var(--warning); }
-  .status-card.critical::before { background: var(--critical); }
-
-  .status-head {
-    display: flex;
-    justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 12px;
-  }
+  .status-head { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
 
   .status-title {
     margin: 6px 0 3px;
     font-size: clamp(32px, 4.8vw, 46px);
-    line-height: 0.95;
-    letter-spacing: 0;
+    line-height: 0.95; letter-spacing: 0;
   }
 
-  .status-copy {
-    max-width: 580px;
-    margin: 0;
-    color: var(--muted);
-    font-size: 13px;
-  }
+  .status-copy { max-width: 580px; margin: 0; color: var(--muted); font-size: 13px; }
 
   .status-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 10px;
-    border: 1px solid var(--border);
-    border-radius: 999px;
-    background: var(--surface-soft);
-    color: var(--muted);
-    font-size: 11px;
-    font-weight: 800;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 10px; border: 1px solid var(--border); border-radius: 999px;
+    background: var(--surface-soft); color: var(--muted);
+    font-size: 11px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase;
   }
 
-  .safe .status-badge,
-  .badge.safe { background: var(--safe-soft); color: var(--safe); border-color: rgba(22, 130, 90, 0.22); }
-  .warning .status-badge,
-  .badge.warning { background: var(--warning-soft); color: var(--warning); border-color: rgba(173, 117, 27, 0.25); }
-  .critical .status-badge,
-  .badge.critical { background: var(--critical-soft); color: var(--critical); border-color: rgba(196, 60, 52, 0.24); }
+  .safe .status-badge,     .badge.safe         { background: var(--safe-soft);         color: var(--safe);         border-color: rgba(22,130,90,0.22); }
+  .warning .status-badge,  .badge.warning       { background: var(--warning-soft);      color: var(--warning);      border-color: rgba(173,117,27,0.25); }
+  .critical .status-badge, .badge.critical      { background: var(--critical-soft);     color: var(--critical);     border-color: rgba(196,60,52,0.24); }
+  .sensor-error .status-badge, .badge.sensor-error { background: var(--sensor-error-soft); color: var(--sensor-error); border-color: rgba(192,132,252,0.28); }
 
-  .summary-grid,
-  .telemetry-grid {
-    display: grid;
-    gap: 8px;
-  }
+  .summary-grid, .telemetry-grid { display: grid; gap: 8px; }
+  .summary-grid    { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .telemetry-grid  { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
-  .summary-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  .telemetry-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-
-  .summary-item,
-  .metric-card {
-    min-width: 0;
-    padding: 10px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
+  .summary-item, .metric-card {
+    min-width: 0; padding: 10px;
+    border: 1px solid var(--border); border-radius: var(--radius);
     background: var(--surface-soft);
     transition: transform 160ms ease, background-color 160ms ease, border-color 160ms ease;
   }
-
-  .summary-item:hover,
-  .metric-card:hover {
-    transform: translateY(-1px);
-    border-color: var(--border-strong);
-  }
-
+  .summary-item:hover, .metric-card:hover { transform: translateY(-1px); border-color: var(--border-strong); }
   .metric-card { background: var(--surface-raised); }
 
-  .label {
-    margin: 0 0 6px;
-    color: var(--muted);
-    font-size: 10px;
-    font-weight: 800;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-  }
-
-  .value {
-    margin: 0;
-    color: var(--text);
-    font-size: 20px;
-    font-weight: 800;
-    line-height: 1.05;
-    overflow-wrap: anywhere;
-  }
-
-  .unit {
-    margin-left: 3px;
-    color: var(--muted);
-    font-size: 12px;
-    font-weight: 800;
-  }
-
-  .subtext {
-    margin: 5px 0 0;
-    color: var(--faint);
-    font-size: 11px;
-    font-weight: 700;
-  }
+  .label { margin: 0 0 6px; color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
+  .value { margin: 0; color: var(--text); font-size: 20px; font-weight: 800; line-height: 1.05; overflow-wrap: anywhere; }
+  .unit  { margin-left: 3px; color: var(--muted); font-size: 12px; font-weight: 800; }
+  .subtext { margin: 5px 0 0; color: var(--faint); font-size: 11px; font-weight: 700; }
 
   .section { margin-top: 12px; }
+  aside .section { margin-top: 0; min-height: 0; }
+  aside .section.card { display: flex; flex-direction: column; }
 
-  aside .section {
-    margin-top: 0;
-    min-height: 0;
-  }
+  .section-header { align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 9px; }
+  .section-title  { align-items: center; gap: 8px; min-width: 0; }
 
-  aside .section.card {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .section-header {
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    margin-bottom: 9px;
-  }
-
-  .section-title {
-    align-items: center;
-    gap: 8px;
-    min-width: 0;
-  }
-
-  .icon-box,
-  .alert-icon {
-    width: 30px;
-    height: 30px;
-    background: var(--blue-soft);
-    color: var(--blue);
+  .icon-box, .alert-icon {
+    width: 30px; height: 30px;
+    background: var(--blue-soft); color: var(--blue);
     transition: transform 180ms ease, box-shadow 180ms ease;
   }
+  .metric-card:hover .icon-box, .section-header:hover .icon-box { transform: scale(1.03); }
 
-  .metric-card:hover .icon-box,
-  .section-header:hover .icon-box {
-    transform: scale(1.03);
-  }
+  .icon-box.safe,         .alert-icon.safe         { background: var(--safe-soft);         color: var(--safe); }
+  .icon-box.warning,      .alert-icon.warning       { background: var(--warning-soft);      color: var(--warning); }
+  .icon-box.critical,     .alert-icon.critical      { background: var(--critical-soft);     color: var(--critical); }
+  .icon-box.sensor-error, .alert-icon.sensor-error  { background: var(--sensor-error-soft); color: var(--sensor-error); }
 
-  .icon-box.safe,  .alert-icon.safe     { background: var(--safe-soft);     color: var(--safe);     }
-  .icon-box.warning, .alert-icon.warning { background: var(--warning-soft);  color: var(--warning);  }
-  .icon-box.critical, .alert-icon.critical { background: var(--critical-soft); color: var(--critical); }
+  h2 { margin: 0; font-size: 15px; letter-spacing: 0; }
+  .section-note { margin: 2px 0 0; color: var(--muted); font-size: 11px; }
+  .metric-row { align-items: flex-start; justify-content: space-between; gap: 10px; }
 
-  h2 {
-    margin: 0;
-    font-size: 15px;
-    letter-spacing: 0;
-  }
-
-  .section-note {
-    margin: 2px 0 0;
-    color: var(--muted);
-    font-size: 11px;
-  }
-
-  .metric-row {
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 10px;
-  }
-
-  .chart-wrap {
-    position: relative;
-    height: 180px;
-    animation: alertIn 360ms ease-out both;
-  }
-
+  .chart-wrap { position: relative; height: 180px; animation: alertIn 360ms ease-out both; }
   .chart-empty {
-    display: none;
-    position: absolute;
-    inset: 0;
-    place-items: center;
-    padding: 12px;
-    border: 1px dashed var(--border-strong);
-    border-radius: var(--radius);
-    background: rgba(17, 24, 39, 0.86);
-    color: var(--muted);
-    text-align: center;
-    font-weight: 800;
+    display: none; position: absolute; inset: 0; place-items: center; padding: 12px;
+    border: 1px dashed var(--border-strong); border-radius: var(--radius);
+    background: rgba(17,24,39,0.86); color: var(--muted); text-align: center; font-weight: 800;
   }
-
   .chart-wrap.empty canvas { opacity: 0; }
   .chart-wrap.empty .chart-empty { display: grid; }
 
-  .threshold-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin-top: 4px;
-  }
-
+  .threshold-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px; }
   .threshold-item .label { margin-bottom: 6px; }
-
-  .threshold-input-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
+  .threshold-input-row { display: flex; align-items: center; gap: 8px; }
 
   input[type=number] {
-    width: 80px;
-    padding: 6px 10px;
-    background: var(--surface-soft);
-    border: 1px solid var(--border-strong);
-    border-radius: var(--radius);
-    color: var(--text);
-    font-family: inherit;
-    font-size: 14px;
-    font-weight: 700;
-    outline: none;
-    transition: border-color 160ms ease;
+    width: 80px; padding: 6px 10px;
+    background: var(--surface-soft); border: 1px solid var(--border-strong);
+    border-radius: var(--radius); color: var(--text);
+    font-family: inherit; font-size: 14px; font-weight: 700;
+    outline: none; transition: border-color 160ms ease;
   }
-
   input[type=number]:focus { border-color: var(--blue); }
-
   input[type=number]::-webkit-inner-spin-button,
   input[type=number]::-webkit-outer-spin-button { opacity: 1; }
 
   .alerts-list {
-    display: grid;
-    gap: 8px;
-    max-height: none;
-    min-height: 0;
-    overflow: auto;
-    padding-right: 4px;
+    display: grid; gap: 8px; max-height: none; min-height: 0;
+    overflow: auto; padding-right: 4px;
   }
-
   .alerts-list::-webkit-scrollbar { width: 8px; }
   .alerts-list::-webkit-scrollbar-track { background: transparent; }
   .alerts-list::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 999px; }
 
   .alert-item {
-    display: grid;
-    grid-template-columns: 30px minmax(0, 1fr);
-    gap: 8px;
-    padding: 9px;
-    border: 1px solid var(--border);
-    border-left: 5px solid var(--warning);
-    border-radius: var(--radius);
-    background: var(--surface-raised);
+    display: grid; grid-template-columns: 30px minmax(0, 1fr);
+    gap: 8px; padding: 9px;
+    border: 1px solid var(--border); border-left: 5px solid var(--warning);
+    border-radius: var(--radius); background: var(--surface-raised);
     animation: alertIn 240ms ease-out both;
     transition: transform 160ms ease, border-color 160ms ease, background-color 160ms ease;
   }
-
   .alert-item:hover { transform: translateX(2px); border-color: var(--border-strong); }
-
-  .alert-item.critical {
-    border-left-color: var(--critical);
-    background: linear-gradient(90deg, rgba(255, 107, 99, 0.16), var(--surface-raised) 62%);
-  }
-
+  .alert-item.critical     { border-left-color: var(--critical);     background: linear-gradient(90deg, rgba(255,107,99,0.16), var(--surface-raised) 62%); }
+  .alert-item.sensor-error { border-left-color: var(--sensor-error); background: linear-gradient(90deg, rgba(192,132,252,0.16), var(--surface-raised) 62%); }
   .alert-item.safe { border-left-color: var(--safe); }
 
-  .alert-top {
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 8px;
-  }
+  .alert-top { align-items: flex-start; justify-content: space-between; gap: 8px; }
+  .alert-title { margin: 0; font-size: 13px; font-weight: 800; }
+  .alert-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 5px; color: var(--muted); font-size: 11px; font-weight: 700; }
 
-  .alert-title {
-    margin: 0;
-    font-size: 13px;
-    font-weight: 800;
-  }
-
-  .alert-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-top: 5px;
-    color: var(--muted);
-    font-size: 11px;
-    font-weight: 700;
-  }
-
-  .empty-state,
-  .loading-state {
-    padding: 18px 12px;
-    border: 1px dashed var(--border-strong);
-    border-radius: var(--radius);
-    background: var(--surface-soft);
-    color: var(--muted);
-    text-align: center;
-    font-weight: 800;
+  .empty-state, .loading-state {
+    padding: 18px 12px; border: 1px dashed var(--border-strong); border-radius: var(--radius);
+    background: var(--surface-soft); color: var(--muted); text-align: center; font-weight: 800;
   }
 
   .footer {
-    justify-content: space-between;
-    gap: 14px;
-    flex-wrap: wrap;
-    margin-top: 8px;
-    padding: 8px 2px 0;
-    color: var(--muted);
-    font-size: 11px;
-    font-weight: 800;
+    justify-content: space-between; gap: 14px; flex-wrap: wrap;
+    margin-top: 8px; padding: 8px 2px 0; color: var(--muted); font-size: 11px; font-weight: 800;
   }
 
   .skeleton {
-    position: relative;
-    display: inline-block;
-    min-width: 82px;
-    color: transparent !important;
-    overflow: hidden;
-    border-radius: 4px;
-    background: #263346;
+    position: relative; display: inline-block; min-width: 82px;
+    color: transparent !important; overflow: hidden; border-radius: 4px; background: #263346;
   }
-
   .skeleton::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    transform: translateX(-100%);
+    content: ""; position: absolute; inset: 0; transform: translateX(-100%);
     background: linear-gradient(90deg, transparent, rgba(255,255,255,0.68), transparent);
     animation: shimmer 1.2s infinite;
   }
-
   @keyframes shimmer { 100% { transform: translateX(100%); } }
 
   @media (max-width: 940px) {
@@ -577,7 +331,6 @@
     aside { max-height: none; }
     .alerts-list { max-height: 360px; }
   }
-
   @media (max-width: 720px) {
     .shell { width: min(100% - 20px, 1180px); padding-top: 14px; }
     .topbar, .status-head { align-items: flex-start; flex-direction: column; }
@@ -587,7 +340,6 @@
     .chart-wrap { height: 240px; }
     .threshold-grid { grid-template-columns: 1fr; }
   }
-
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
       animation-duration: 0.01ms !important;
@@ -617,7 +369,10 @@
     </div>
   </header>
 
-  <div class="banner" id="banner">Unable to load dashboard readings. Check the existing data connection and try again.</div>
+  <div class="banner" id="banner">Unable to load dashboard readings. Check the data connection and try again.</div>
+  <div class="sensor-error-banner" id="sensorErrorBanner">
+    Ultrasonic sensor failure detected. The device has halted and requires a power cycle. Last known water level is shown.
+  </div>
 
   <section class="layout">
     <div>
@@ -781,7 +536,7 @@
             </div>
             <div>
               <h2>Recent Alerts</h2>
-              <p class="section-note">Warning and critical events</p>
+              <p class="section-note">Warning, critical and sensor error events</p>
             </div>
           </div>
           <span class="badge" id="logCount">Loading</span>
@@ -800,11 +555,11 @@
 </main>
 
 <script>
-const SUPABASE_URL = 'https://cbmleqcqohvaqelsbwuc.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNibWxlcWNxb2h2YXFlbHNid3VjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxNzgwMzYsImV4cCI6MjA5NDc1NDAzNn0.sYdbPsT1w3gocZlW6_pqazdKCbsun2cNStWe9Uiz8cg';
-const TABLE_NAME   = 'readings';
-const POLL_INTERVAL   = 5000;
-const OFFLINE_AFTER_MS = 30000;
+const SUPABASE_URL      = 'https://cbmleqcqohvaqelsbwuc.supabase.co';
+const SUPABASE_KEY      = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNibWxlcWNxb2h2YXFlbHNid3VjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxNzgwMzYsImV4cCI6MjA5NDc1NDAzNn0.sYdbPsT1w3gocZlW6_pqazdKCbsun2cNStWe9Uiz8cg';
+const TABLE_NAME        = 'readings';
+const POLL_INTERVAL     = 5000;
+const OFFLINE_AFTER_MS  = 30000;
 
 let installHeight  = null;
 let heightFromDB   = false;
@@ -817,39 +572,40 @@ const chartLabels = [];
 const chartData   = [];
 
 const els = {
-  banner:           document.getElementById('banner'),
-  connectionChip:   document.getElementById('connectionChip'),
-  nodeChip:         document.getElementById('nodeChip'),
-  lastUpdatedChip:  document.getElementById('lastUpdatedChip'),
-  statusCard:       document.getElementById('statusCard'),
-  statusBadge:      document.getElementById('statusBadge'),
-  statusTitle:      document.getElementById('statusTitle'),
-  statusCopy:       document.getElementById('statusCopy'),
-  summaryWater:     document.getElementById('summaryWater'),
-  summaryWaterSub:  document.getElementById('summaryWaterSub'),
-  summaryLeak:      document.getElementById('summaryLeak'),
-  summaryLeakSub:   document.getElementById('summaryLeakSub'),
-  summaryUpdated:   document.getElementById('summaryUpdated'),
-  summaryUpdatedSub:document.getElementById('summaryUpdatedSub'),
-  summaryDevice:    document.getElementById('summaryDevice'),
-  summaryDeviceSub: document.getElementById('summaryDeviceSub'),
-  mWater:           document.getElementById('mWater'),
-  mWaterSub:        document.getElementById('mWaterSub'),
-  mLeak:            document.getElementById('mLeak'),
-  mLeakSub:         document.getElementById('mLeakSub'),
-  mDist:            document.getElementById('mDist'),
-  mDistSub:         document.getElementById('mDistSub'),
-  mAlarms:          document.getElementById('mAlarms'),
-  mAlarmSub:        document.getElementById('mAlarmSub'),
-  waterIcon:        document.getElementById('waterIcon'),
-  leakIcon:         document.getElementById('leakIcon'),
-  logList:          document.getElementById('logList'),
-  logCount:         document.getElementById('logCount'),
-  historyCount:     document.getElementById('historyCount'),
-  chartWrap:        document.getElementById('chartWrap'),
-  warnInput:        document.getElementById('warnInput'),
-  critInput:        document.getElementById('critInput'),
-  footerUptime:     document.getElementById('footerUptime')
+  banner:             document.getElementById('banner'),
+  sensorErrorBanner:  document.getElementById('sensorErrorBanner'),
+  connectionChip:     document.getElementById('connectionChip'),
+  nodeChip:           document.getElementById('nodeChip'),
+  lastUpdatedChip:    document.getElementById('lastUpdatedChip'),
+  statusCard:         document.getElementById('statusCard'),
+  statusBadge:        document.getElementById('statusBadge'),
+  statusTitle:        document.getElementById('statusTitle'),
+  statusCopy:         document.getElementById('statusCopy'),
+  summaryWater:       document.getElementById('summaryWater'),
+  summaryWaterSub:    document.getElementById('summaryWaterSub'),
+  summaryLeak:        document.getElementById('summaryLeak'),
+  summaryLeakSub:     document.getElementById('summaryLeakSub'),
+  summaryUpdated:     document.getElementById('summaryUpdated'),
+  summaryUpdatedSub:  document.getElementById('summaryUpdatedSub'),
+  summaryDevice:      document.getElementById('summaryDevice'),
+  summaryDeviceSub:   document.getElementById('summaryDeviceSub'),
+  mWater:             document.getElementById('mWater'),
+  mWaterSub:          document.getElementById('mWaterSub'),
+  mLeak:              document.getElementById('mLeak'),
+  mLeakSub:           document.getElementById('mLeakSub'),
+  mDist:              document.getElementById('mDist'),
+  mDistSub:           document.getElementById('mDistSub'),
+  mAlarms:            document.getElementById('mAlarms'),
+  mAlarmSub:          document.getElementById('mAlarmSub'),
+  waterIcon:          document.getElementById('waterIcon'),
+  leakIcon:           document.getElementById('leakIcon'),
+  logList:            document.getElementById('logList'),
+  logCount:           document.getElementById('logCount'),
+  historyCount:       document.getElementById('historyCount'),
+  chartWrap:          document.getElementById('chartWrap'),
+  warnInput:          document.getElementById('warnInput'),
+  critInput:          document.getElementById('critInput'),
+  footerUptime:       document.getElementById('footerUptime')
 };
 
 initChart();
@@ -881,19 +637,11 @@ function trySetHeightFromDB(rows) {
   const sorted = rows.slice().sort((a, b) => new Date(getRowTimeRaw(a)) - new Date(getRowTimeRaw(b)));
   for (const row of sorted) {
     const h = Number(row.install_height ?? row.sensor_height ?? row.height);
-    if (Number.isFinite(h) && h > 0) {
-      installHeight = h;
-      heightFromDB  = true;
-      return;
-    }
+    if (Number.isFinite(h) && h > 0) { installHeight = h; heightFromDB = true; return; }
   }
   for (const row of sorted) {
     const d = Number(row.distance ?? row.distance_cm);
-    if (Number.isFinite(d) && d > 0) {
-      installHeight = d;
-      heightFromDB  = true;
-      return;
-    }
+    if (Number.isFinite(d) && d > 0) { installHeight = d; heightFromDB = true; return; }
   }
 }
 
@@ -914,10 +662,21 @@ async function fetchLatest() {
     updateChart(data.slice().reverse());
     renderAlerts(data);
     checkAlarms(data);
+    // Show sensor error banner if latest reading is a sensor error
+    if (isSensorError(latest)) {
+      els.sensorErrorBanner.classList.add('show');
+    } else {
+      els.sensorErrorBanner.classList.remove('show');
+    }
   } catch (e) {
     showBanner();
     setConnection(false);
   }
+}
+
+function isSensorError(row) {
+  return String(row.state ?? '').toLowerCase() === 'sensor_error' ||
+         row.ultrasonic_error === true || row.ultrasonic_error === 1;
 }
 
 function renderEmpty() {
@@ -925,7 +684,7 @@ function renderEmpty() {
   els.statusBadge.innerHTML = '<span class="dot"></span> No Data';
   els.statusTitle.textContent = 'Waiting';
   els.statusCopy.textContent = 'No telemetry has been received yet. The dashboard will update automatically when readings arrive.';
-  els.logList.innerHTML = '<div class="empty-state">No alert events yet. Warning and critical events will appear here automatically.</div>';
+  els.logList.innerHTML = '<div class="empty-state">No alert events yet. Warning, critical and sensor error events will appear here automatically.</div>';
   els.logCount.textContent = '0 events';
   els.historyCount.textContent = '0 readings';
   els.chartWrap.classList.add('empty');
@@ -939,6 +698,7 @@ function updateMetrics(row) {
   const time   = getRowTime(row);
   const online = Date.now() - time.getTime() <= OFFLINE_AFTER_MS;
   const nodeId = row.node_id || row.device_id || 'node-01';
+  const isErr  = isSensorError(row);
 
   els.statusCard.className = 'card card-pad status-card ' + state;
   els.statusBadge.innerHTML = '<span class="dot"></span> ' + stateLabel(state);
@@ -950,26 +710,26 @@ function updateMetrics(row) {
   setConnection(online, online ? 'Live' : 'Stale data');
 
   els.summaryWater.innerHTML = formatLevel(wl) + '<span class="unit">cm</span>';
-  els.summaryWaterSub.textContent = waterLevelText(wl, leak);
+  els.summaryWaterSub.textContent = isErr ? 'Last known level before sensor failure' : waterLevelText(wl, leak);
   els.summaryLeak.textContent = leak ? 'Detected' : 'Clear';
   els.summaryLeakSub.textContent = leak ? 'Water contact sensor is active' : 'No leak contact reported';
   els.summaryUpdated.textContent = fmtTime(time);
   els.summaryUpdatedSub.textContent = formatDate(time);
-  els.summaryDevice.textContent = online ? 'Online' : 'Stale';
-  els.summaryDeviceSub.textContent = online ? 'Recent telemetry received' : 'No fresh reading in 30 seconds';
+  els.summaryDevice.textContent = isErr ? 'Halted' : (online ? 'Online' : 'Stale');
+  els.summaryDeviceSub.textContent = isErr ? 'Sensor failure — power cycle required' : (online ? 'Recent telemetry received' : 'No fresh reading in 30 seconds');
 
   els.mWater.innerHTML = formatLevel(wl) + '<span class="unit">cm</span>';
-  els.mWaterSub.textContent = waterLevelText(wl, leak);
+  els.mWaterSub.textContent = isErr ? 'Last known level before sensor failure' : waterLevelText(wl, leak);
   els.mLeak.textContent = leak ? 'Detected' : 'Clear';
   els.mLeakSub.textContent = leak ? 'Leak sensor has triggered' : 'Leak sensor is clear';
   els.mDist.innerHTML = formatLevel(dist) + '<span class="unit">cm</span>';
-  els.mDistSub.textContent = Number.isFinite(dist) ? 'Measured by ultrasonic sensor' : 'Distance not included in reading';
+  els.mDistSub.textContent = isErr ? 'Sensor unavailable' : (Number.isFinite(dist) ? 'Measured by ultrasonic sensor' : 'Distance not included in reading');
   els.waterIcon.className = 'icon-box ' + state;
   els.leakIcon.className  = 'icon-box ' + (leak ? 'critical' : 'safe');
 }
 
 function updateChart(rows) {
-  const validRows = rows.filter(r => Number.isFinite(getWaterLevel(r)));
+  const validRows = rows.filter(r => Number.isFinite(getWaterLevel(r)) && !isSensorError(r));
   chartLabels.length = 0;
   chartData.length   = 0;
   validRows.forEach(r => {
@@ -987,16 +747,20 @@ function renderAlerts(rows) {
   const alerts = rows.filter(r => getState(r, getWaterLevel(r), getLeakDetected(r)) !== 'safe');
   els.logCount.textContent = alerts.length + ' events';
   if (!alerts.length) {
-    els.logList.innerHTML = '<div class="empty-state">No alert events yet. Warning and critical events will appear here automatically.</div>';
+    els.logList.innerHTML = '<div class="empty-state">No alert events yet. Warning, critical and sensor error events will appear here automatically.</div>';
     return;
   }
   els.logList.innerHTML = alerts.map(row => {
     const wl    = getWaterLevel(row);
     const leak  = getLeakDetected(row);
     const state = getState(row, wl, leak);
-    const message = state === 'critical'
-      ? 'Water level exceeded critical threshold (' + critThreshold.toFixed(1) + ' cm)'
-      : 'Leak detected above warning threshold (' + warnThreshold.toFixed(1) + ' cm)';
+    const isErr = isSensorError(row);
+    const message = isErr
+      ? 'Ultrasonic sensor failure — last known level: ' + formatLevel(wl) + ' cm'
+      : state === 'critical'
+        ? 'Water level exceeded critical threshold (' + critThreshold.toFixed(1) + ' cm)'
+        : 'Leak detected above warning threshold (' + warnThreshold.toFixed(1) + ' cm)';
+
     return `
       <article class="alert-item ${state}">
         <div class="alert-icon ${state}" aria-hidden="true">
@@ -1040,16 +804,12 @@ function initChart() {
         data: chartData,
         borderColor: '#1d6fb8',
         backgroundColor: 'rgba(29,111,184,0.12)',
-        borderWidth: 2,
-        pointRadius: 3,
-        pointHoverRadius: 5,
-        fill: true,
-        tension: 0.32
+        borderWidth: 2, pointRadius: 3, pointHoverRadius: 5,
+        fill: true, tension: 0.32
       }]
     },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
+      responsive: true, maintainAspectRatio: false,
       interaction: { mode: 'index', intersect: false },
       plugins: {
         legend: { display: false },
@@ -1058,15 +818,12 @@ function initChart() {
       scales: {
         x: {
           ticks: { color: '#9aa9bb', maxTicksLimit: 8, font: { family: 'Inter', size: 11, weight: '600' } },
-          grid: { color: 'rgba(148,163,184,0.14)' },
-          border: { color: 'rgba(148,163,184,0.22)' }
+          grid: { color: 'rgba(148,163,184,0.14)' }, border: { color: 'rgba(148,163,184,0.22)' }
         },
         y: {
-          beginAtZero: true,
-          suggestedMax: 5,
+          beginAtZero: true, suggestedMax: 5,
           ticks: { color: '#9aa9bb', callback: v => v + ' cm', font: { family: 'Inter', size: 11, weight: '600' } },
-          grid: { color: 'rgba(148,163,184,0.14)' },
-          border: { color: 'rgba(148,163,184,0.22)' }
+          grid: { color: 'rgba(148,163,184,0.14)' }, border: { color: 'rgba(148,163,184,0.22)' }
         }
       }
     }
@@ -1095,9 +852,11 @@ function getLeakDetected(row) {
 
 function getState(row, waterLevel, leakDetected) {
   const explicit = String(row.state ?? row.status ?? '').toLowerCase();
+  if (explicit === 'sensor_error') return 'sensor-error';
   if (explicit.includes('critical')) return 'critical';
   if (explicit.includes('warning') || explicit.includes('warn')) return 'warning';
   if (explicit.includes('safe') || explicit.includes('normal')) return 'safe';
+  if (row.ultrasonic_error === true || row.ultrasonic_error === 1) return 'sensor-error';
   if (Number.isFinite(waterLevel) && waterLevel >= critThreshold) return 'critical';
   if (leakDetected && Number.isFinite(waterLevel) && waterLevel >= warnThreshold) return 'warning';
   if (leakDetected) return 'warning';
@@ -1114,46 +873,33 @@ function getRowTime(row) {
 }
 
 function stateLabel(state) {
-  return { safe: 'Safe', warning: 'Warning', critical: 'Critical' }[state] || 'Safe';
+  return { safe: 'Safe', warning: 'Warning', critical: 'Critical', 'sensor-error': 'Sensor Error' }[state] || 'Safe';
 }
 
 function stateColor(state) {
-  return { safe: '#16825a', warning: '#ad751b', critical: '#c43c34' }[state] || '#8997a8';
+  return { safe: '#16825a', warning: '#ad751b', critical: '#c43c34', 'sensor-error': '#9333ea' }[state] || '#8997a8';
 }
 
 function statusCopy(state) {
-  if (state === 'critical') return 'Water level has exceeded ' + critThreshold.toFixed(1) + ' cm. Immediate attention is recommended.';
-  if (state === 'warning')  return 'Leak detected above ' + warnThreshold.toFixed(1) + ' cm. Monitor the situation closely.';
+  if (state === 'sensor-error') return 'The ultrasonic sensor has failed. The device is halted and requires a power cycle. The last known water level is displayed.';
+  if (state === 'critical')     return 'Water level has exceeded ' + critThreshold.toFixed(1) + ' cm. Immediate attention is recommended.';
+  if (state === 'warning')      return 'Leak detected above ' + warnThreshold.toFixed(1) + ' cm. Monitor the situation closely.';
   return 'No leak detected and water level is within the safe range.';
 }
 
 function waterLevelText(value, leak) {
   if (!Number.isFinite(value)) return 'Sensor reading unavailable';
-  if (value >= critThreshold) return 'Critical threshold exceeded (>= ' + critThreshold.toFixed(1) + ' cm)';
+  if (value >= critThreshold)  return 'Critical threshold exceeded (>= ' + critThreshold.toFixed(1) + ' cm)';
   if (leak && value >= warnThreshold) return 'Leak detected above warning level (' + warnThreshold.toFixed(1) + ' cm)';
   if (leak) return 'Leak detected, level within warning range';
   return 'Within safe range';
 }
 
-function formatLevel(value) {
-  return Number.isFinite(value) ? roundLevel(value).toFixed(1) : '--';
-}
-
-function roundLevel(value) {
-  return Math.round(Number(value) * 10) / 10;
-}
-
-function fmtTime(d) {
-  return d.toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-}
-
-function formatDate(d) {
-  return d.toLocaleDateString('en', { month: 'short', day: 'numeric', year: 'numeric' });
-}
-
-function formatDateTime(d) {
-  return formatDate(d) + ', ' + fmtTime(d);
-}
+function formatLevel(value) { return Number.isFinite(value) ? roundLevel(value).toFixed(1) : '--'; }
+function roundLevel(value)  { return Math.round(Number(value) * 10) / 10; }
+function fmtTime(d)         { return d.toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit', second: '2-digit' }); }
+function formatDate(d)      { return d.toLocaleDateString('en', { month: 'short', day: 'numeric', year: 'numeric' }); }
+function formatDateTime(d)  { return formatDate(d) + ', ' + fmtTime(d); }
 
 function updateUptime() {
   const min = Math.floor((Date.now() - startTime) / 60000);
@@ -1165,18 +911,14 @@ function setConnection(ok, text) {
   els.connectionChip.style.color = ok ? 'var(--safe)' : 'var(--critical)';
 }
 
-function showBanner() { els.banner.classList.add('show'); }
-function hideBanner() { els.banner.classList.remove('show'); }
+function showBanner()      { els.banner.classList.add('show'); }
+function hideBanner()      { els.banner.classList.remove('show'); }
 
 function escapeHtml(value) {
   return String(value)
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#039;');
+    .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
 }
 </script>
 </body>
 </html>
-```
