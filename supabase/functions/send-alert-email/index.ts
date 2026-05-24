@@ -28,8 +28,8 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const resendApiKey = "PASTE_YOUR_RESEND_API_KEY_HERE";
-const alertRecipientEmail = "devep1210@gmail.com";
+const resendApiKey = "re_6turgRoW_PkdmkA5dwcqgRRbkgGR3EwMJ";
+const alertRecipientEmail = "zzhfisher@outlook.com";
 const emailFrom = "Smart Flood Sentinel <onboarding@resend.dev>";
 const waterLevelThresholdCm = 0.1;
 const criticalWaterLevelThresholdCm = 10;
